@@ -12,7 +12,7 @@
     "resolveJsonModule": true,
     "moduleResolution": "node"
   },
-  "include": ["src/**/*", "tests/easy/**/*"],
+  "include": ["src/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist", "tests/agah/**/*", "tests/easy/archive/**/*"]
 }
 

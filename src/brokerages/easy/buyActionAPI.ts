@@ -2,6 +2,7 @@ import { Page } from 'playwright';
 import { PerformanceLogger } from './logger';
 import { BuyOrder } from './buyAction';
 import { executeFastBuy } from './buyAction';
+import { logger } from '../../core/advancedLogger';
 
 /**
  * دریافت هدرهای معتبر از ترافیک شبکه با استفاده از page.route()
@@ -141,6 +142,7 @@ async function getAuthHeaders(page: Page): Promise<Record<string, string>> {
  */
 export async function executeAPIBuy(page: Page, order: BuyOrder) {
   console.log('\n--- شروع فرآیند خرید API مستقیم (نسخه اصلاح شده) ---');
+  logger.info('buyActionAPI.ts:executeAPIBuy', 'Starting API buy process', { model: 5, order });
   PerformanceLogger.start('Total_Execution_API');
 
   PerformanceLogger.start('Prepare_Headers');
@@ -160,6 +162,14 @@ export async function executeAPIBuy(page: Page, order: BuyOrder) {
     hour12: true
   });
 
+  // Mapping نام نماد به ISIN
+  const symbolToIsin: Record<string, string> = {
+    'زر': 'IRTKZARF0001',
+    // می‌توانید نمادهای دیگر را اضافه کنید
+  };
+
+  const symbolIsin = symbolToIsin[order.symbol] || 'IRTKZARF0001'; // fallback به زر
+
   const payload = {
     order: {
       price: parseInt(order.price),
@@ -168,18 +178,23 @@ export async function executeAPIBuy(page: Page, order: BuyOrder) {
       validityType: 0, // 0 = روزانه
       createDateTime: createDateTime,
       commission: 0.0012,
-      symbolIsin: "IRTKZARF0001", // ISIN نماد زر
+      symbolIsin: symbolIsin, // استفاده از mapping
       symbolName: order.symbol,
       orderModelType: 1,
       orderFrom: 34
     }
   };
+  
+  console.log(`📋 سفارش: ${order.symbol} (ISIN: ${symbolIsin}), قیمت: ${order.price}, تعداد: ${order.quantity}`);
 
   PerformanceLogger.end('Prepare_Headers');
 
   PerformanceLogger.start('API_Call');
   
   try {
+    // Log API request
+    logger.logAPIRequest('https://api-mts.orbis.easytrader.ir/core/api/v2/order', 'POST', payload);
+    
     // استفاده از context request برای ارسال که کوکی‌ها را هم خودکار مدیریت می‌کند
     const response = await page.request.post('https://api-mts.orbis.easytrader.ir/core/api/v2/order', {
       headers: headers,
@@ -194,16 +209,26 @@ export async function executeAPIBuy(page: Page, order: BuyOrder) {
     } catch {
       const text = await response.text();
       console.log('Text Response:', text);
+      responseData = { text };
     }
 
     PerformanceLogger.end('API_Call');
+    
+    // Log API response
+    logger.logAPIRequest('https://api-mts.orbis.easytrader.ir/core/api/v2/order', 'POST', payload, responseData, status);
 
     if (status === 200 && responseData.isSuccessful) {
       console.log(`✅✅✅ سفارش با موفقیت ثبت شد (API)! ID: ${responseData.id}`);
       const totalTime = PerformanceLogger.end('Total_Execution_API');
+      
+      // Log successful buy
+      logger.logBuy(`buy-${Date.now()}`, order, { success: true, duration: totalTime, orderId: responseData.id }, totalTime);
+      logger.logPerformance('buy-model-5', totalTime, { order, success: true });
+      
       return totalTime;
     } else {
       console.warn(`⚠️ خطا در API (Status: ${status}). پیام:`, JSON.stringify(responseData));
+      logger.warn('buyActionAPI.ts:executeAPIBuy', 'API call failed', { status, response: responseData, payload });
       
       // اگر خطا مربوط به محدوده قیمت/حجم باشد، یعنی احراز هویت درست بوده اما دیتا غلط است
       if (status === 400 || (responseData.message && responseData.message.includes('محدوده'))) {
@@ -218,6 +243,7 @@ export async function executeAPIBuy(page: Page, order: BuyOrder) {
 
   } catch (error: any) {
     console.error('❌ خطای ارتباطی در API:', error.message);
+    logger.error('buyActionAPI.ts:executeAPIBuy', 'API call exception', error, { order, payload });
     return await executeFastBuy(page, order);
   }
 }

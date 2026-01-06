@@ -36,7 +36,18 @@
     "test:easy:scan": "tsc && node dist/tests/easy/temp_deep_scan.js",
     "test:omni": "tsc && node dist/tests/temp_omni_search.js",
     "test:final": "tsc && node dist/tests/temp_final_buy_test.js",
-    "test:last_agah": "tsc && node dist/tests/temp_last_agah_attempt.js"
+    "test:last_agah": "tsc && node dist/tests/temp_last_agah_attempt.js",
+    "test:unit:logger": "tsc && node dist/tests/unit/test-logger.js",
+    "test:unit:symbol": "tsc && node dist/tests/unit/test-symbolMapping.js",
+    "test:unit:form": "tsc && node dist/tests/unit/test-formHelper.js",
+    "test:unit:all": "npm run test:unit:logger && npm run test:unit:symbol && npm run test:unit:form",
+    "test:integration:model1": "tsc && node dist/tests/integration/test-buy-model1.js",
+    "test:integration:model4": "tsc && node dist/tests/integration/test-buy-model4.js",
+    "test:integration:model5": "tsc && node dist/tests/integration/test-buy-model5.js",
+    "test:integration:all": "npm run test:integration:model1 && npm run test:integration:model4 && npm run test:integration:model5",
+    "test:performance:benchmark": "tsc && node dist/tests/performance/test-benchmark.js",
+    "test:scenario:basic": "tsc && node dist/tests/scenarios/test-basic-buy.js",
+    "test:all": "npm run test:unit:all && npm run test:integration:all && npm run test:performance:benchmark && npm run test:scenario:basic"
   },
   "keywords": [
     "playwright",
