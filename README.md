@@ -299,7 +299,38 @@ npm run test:easy:login:auto
 
 ## 📝 نحوه استفاده
 
-### مثال ساده
+### روش ۱: استفاده از داشبورد (توصیه می‌شود) 🎯
+
+ساده‌ترین روش برای استفاده از ربات:
+
+```bash
+# ۱. اجرای داشبورد
+npm run dashboard
+
+# ۲. باز کردن مرورگر و رفتن به:
+# http://localhost:3000
+```
+
+**ویژگی‌های داشبورد:**
+- ✅ رابط کاربری ساده و زیبا
+- ✅ فرم خرید با تمام گزینه‌ها
+- ✅ انتخاب مدل خرید (1-5)
+- ✅ گزینه Debug (نمایش/مخفی کردن مرورگر)
+- ✅ نمایش وضعیت خرید
+- ✅ تاریخچه خریدها
+- ✅ دکمه لاگین
+
+**مراحل استفاده:**
+1. اجرای `npm run dashboard`
+2. باز کردن `http://localhost:3000` در مرورگر
+3. کلیک روی دکمه "لاگین" (اولین بار)
+4. پر کردن فرم خرید و کلیک روی "خرید"
+
+---
+
+### روش ۲: استفاده از کد (برای توسعه‌دهندگان)
+
+#### مثال ساده
 
 ```typescript
 import { BrowserManager } from './src/core/browser';
@@ -307,7 +338,7 @@ import { executeFastBuy } from './src/brokerages/easy/buyAction';
 
 async function main() {
   const browserManager = new BrowserManager('easy');
-  const page = await browserManager.launch(false);
+  const page = await browserManager.launch(true); // headless: true
   
   await page.goto('https://d.easytrader.ir/', { waitUntil: 'load' });
   await page.waitForTimeout(15000); // انتظار برای لود کامل
@@ -325,7 +356,7 @@ async function main() {
 main();
 ```
 
-### استفاده از مدل ۳ (توصیه می‌شود)
+#### استفاده از مدل ۳ (توصیه می‌شود)
 
 ```typescript
 import { executeJSInjectBuy } from './src/brokerages/easy/buyActionJS';
@@ -333,7 +364,7 @@ import { executeJSInjectBuy } from './src/brokerages/easy/buyActionJS';
 await executeJSInjectBuy(page, order);
 ```
 
-### استفاده از مدل ۴ (سریع‌ترین)
+#### استفاده از مدل ۴ (سریع‌ترین)
 
 ```typescript
 import { executeUltraBuy } from './src/brokerages/easy/buyActionUltra';
@@ -357,6 +388,7 @@ await executeUltraBuy(page, order);
 
 ## 📚 مستندات تکمیلی
 
+- **DASHBOARD_GUIDE.md**: راهنمای کامل استفاده از داشبورد
 - **SPEED_REPORT.md**: گزارش کامل بنچمارک سرعت
 - **JOURNAL.md**: تاریخچه پیشرفت پروژه و تصمیمات
 

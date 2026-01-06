@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ربات خرید خودکار ایزی‌تریدر</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 ربات خرید خودکار</h1>
+            <p>کارگزاری مفید (EasyTrader)</p>
+        </header>
+
+        <main>
+            <!-- فرم خرید -->
+            <section class="buy-section">
+                <h2>خرید سهم</h2>
+                <form id="buyForm">
+                    <div class="form-group">
+                        <label for="symbol">نماد:</label>
+                        <input type="text" id="symbol" name="symbol" placeholder="مثلاً: زر" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="price">قیمت:</label>
+                        <input type="number" id="price" name="price" placeholder="590000" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="quantity">تعداد:</label>
+                        <input type="number" id="quantity" name="quantity" placeholder="2" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="model">مدل خرید:</label>
+                        <select id="model" name="model">
+                            <option value="1">مدل ۱: Standard (۹۶۰ms)</option>
+                            <option value="3" selected>مدل ۳: JS Injection (۷۶۳ms) ⭐</option>
+                            <option value="4">مدل ۴: Ultra (۲۰۲ms) 🏆</option>
+                            <option value="5">مدل ۵: API (۳۶۴ms) 🔮</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="debug" name="debug">
+                            نمایش مرورگر (برای دیباگ)
+                        </label>
+                    </div>
+                    
+                    <button type="submit" id="buyBtn">🚀 خرید</button>
+                </form>
+            </section>
+
+            <!-- نمایش وضعیت -->
+            <section class="status-section">
+                <h2>وضعیت</h2>
+                <div id="status" class="status-info">
+                    <p>آماده برای خرید</p>
+                </div>
+            </section>
+
+            <!-- تاریخچه -->
+            <section class="history-section">
+                <h2>تاریخچه خریدها</h2>
+                <div id="history" class="history-list">
+                    <p>هنوز خریدی انجام نشده است</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <button id="loginBtn" class="btn-secondary">🔐 لاگین</button>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

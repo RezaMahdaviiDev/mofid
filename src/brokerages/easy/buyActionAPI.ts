@@ -4,48 +4,135 @@ import { BuyOrder } from './buyAction';
 import { executeFastBuy } from './buyAction';
 
 /**
- * دریافت هدرهای معتبر از ترافیک شبکه
- * این تابع منتظر می‌ماند تا یک درخواست به API ارسال شود و هدرهای آن را کپی می‌کند
+ * دریافت هدرهای معتبر از ترافیک شبکه با استفاده از page.route()
+ * این تابع از route interception استفاده می‌کند تا توکن را از درخواست‌های واقعی استخراج کند
  */
 async function getAuthHeaders(page: Page): Promise<Record<string, string>> {
-  console.log('🕵️ در حال شنود شبکه برای استخراج توکن احراز هویت...');
+  console.log('🕵️ در حال استخراج توکن احراز هویت با page.route()...');
   
-  try {
-    // منتظر می‌مانیم تا یک درخواست به API اصلی ارسال شود (مثلاً دریافت مانده یا پورتفوی)
-    // معمولا درخواست‌هایی که به /api/v2/ می‌روند حاوی توکن هستند
-    const request = await page.waitForRequest(
-      req => req.url().includes('api-mts.orbis.easytrader.ir') && 
-             req.method() !== 'OPTIONS',
-      { timeout: 5000 }
-    );
-
+  // استفاده از page.route() برای intercept کردن درخواست‌ها
+  let capturedHeaders: Record<string, string> | null = null;
+  let requestFound = false;
+  
+  const routeHandler = async (route: any) => {
+    const request = route.request();
+    const url = request.url();
     const headers = request.headers();
     
-    // فیلتر کردن هدرهای مهم
-    const authHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json, text/plain, */*',
-      'Accept-Language': 'fa'
-    };
-
-    // کپی کردن توکن Authorization اگر وجود داشته باشد
-    if (headers['authorization']) {
-      authHeaders['Authorization'] = headers['authorization'];
-      console.log('✅ توکن Authorization استخراج شد.');
+    // بررسی اینکه آیا این درخواست به API اصلی است و توکن دارد
+    if (url.includes('api-mts.orbis.easytrader.ir') && 
+        url.includes('/api/v2/') &&
+        request.method() !== 'OPTIONS' &&
+        (headers['authorization'] || headers['Authorization'])) {
+      
+      if (!capturedHeaders) {
+        capturedHeaders = { ...headers };
+        requestFound = true;
+        console.log('✅ توکن از درخواست API استخراج شد:', url);
+      }
     }
     
-    // کپی کردن سایر هدرهای احتمالی امنیتی
-    if (headers['x-requested-with']) authHeaders['X-Requested-With'] = headers['x-requested-with'];
+    // ادامه درخواست
+    await route.continue();
+  };
+  
+  // فعال کردن route interception
+  await page.route('**/*', routeHandler);
+  
+  try {
+    // منتظر می‌مانیم تا یک درخواست با توکن پیدا شود
+    console.log('⏳ منتظر درخواست API با توکن...');
     
-    return authHeaders;
+    await page.waitForRequest(
+      req => {
+        const url = req.url();
+        const headers = req.headers();
+        return url.includes('api-mts.orbis.easytrader.ir') && 
+               url.includes('/api/v2/') &&
+               req.method() !== 'OPTIONS' &&
+               !!(headers['authorization'] || headers['Authorization']);
+      },
+      { timeout: 10000 }
+    );
+    
+    // کمی صبر می‌کنیم تا route handler اجرا شود
+    await page.waitForTimeout(500);
+    
+    // غیرفعال کردن route interception
+    await page.unroute('**/*', routeHandler);
+    
+    if (capturedHeaders) {
+      const headers = capturedHeaders;
+    
+      console.log('🔑 هدرهای موجود:', Object.keys(headers).filter(k => 
+        k.toLowerCase().includes('auth') || 
+        k.toLowerCase().includes('token') ||
+        k.toLowerCase().includes('cookie')
+      ));
+      
+      // فیلتر کردن هدرهای مهم
+      const authHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'fa',
+        'Referer': 'https://d.easytrader.ir/',
+        'Origin': 'https://d.easytrader.ir'
+      };
 
-  } catch (e) {
-    console.warn('⚠️ نتوانستیم هدرها را از شبکه استخراج کنیم. از هدرهای پیش‌فرض استفاده می‌شود.');
-    return {
+      // کپی کردن توکن Authorization اگر وجود داشته باشد
+      if (headers['authorization']) {
+        authHeaders['Authorization'] = headers['authorization'];
+        console.log('✅ توکن Authorization استخراج شد (lowercase).');
+      } else if (headers['Authorization']) {
+        authHeaders['Authorization'] = headers['Authorization'];
+        console.log('✅ توکن Authorization استخراج شد (uppercase).');
+      } else {
+        console.warn('⚠️ توکن Authorization در هدرها پیدا نشد.');
+        // تلاش برای استخراج از کوکی‌ها
+        const cookies = await page.context().cookies();
+        if (cookies.length > 0) {
+          const cookieString = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+          authHeaders['Cookie'] = cookieString;
+          console.log('✅ کوکی‌ها اضافه شدند.');
+        }
+      }
+      
+      // کپی کردن سایر هدرهای احتمالی امنیتی
+      if (headers['x-requested-with']) authHeaders['X-Requested-With'] = headers['x-requested-with'];
+      if (headers['x-csrf-token']) authHeaders['X-CSRF-Token'] = headers['x-csrf-token'];
+      if (headers['cookie'] && !authHeaders['Cookie']) {
+        authHeaders['Cookie'] = headers['cookie'];
+      }
+      
+      return authHeaders;
+    } else {
+      throw new Error('توکن پیدا نشد');
+    }
+
+  } catch (e: any) {
+    // غیرفعال کردن route interception در صورت خطا
+    try {
+      await page.unroute('**/*', routeHandler);
+    } catch {}
+    
+    console.warn('⚠️ نتوانستیم هدرها را از شبکه استخراج کنیم:', e.message);
+    console.warn('💡 از هدرهای پیش‌فرض + کوکی‌ها استفاده می‌شود.');
+    
+    // تلاش برای استفاده از کوکی‌های موجود
+    const cookies = await page.context().cookies();
+    const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json, text/plain, */*',
-      'Referer': 'https://d.easytrader.ir/'
+      'Referer': 'https://d.easytrader.ir/',
+      'Origin': 'https://d.easytrader.ir'
     };
+    
+    if (cookies.length > 0) {
+      defaultHeaders['Cookie'] = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+      console.log('✅ کوکی‌ها اضافه شدند (fallback).');
+    }
+    
+    return defaultHeaders;
   }
 }
 

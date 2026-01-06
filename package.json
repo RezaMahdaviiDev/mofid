@@ -7,6 +7,8 @@
     "build": "tsc",
     "start": "node dist/main.js",
     "dev": "tsc && node dist/main.js",
+    "dashboard": "tsc && xcopy /E /I /Y src\\dashboard\\public dist\\src\\dashboard\\public && node dist/src/dashboard/server.js",
+    "dashboard:dev": "tsc && xcopy /E /I /Y src\\dashboard\\public dist\\src\\dashboard\\public && node dist/src/dashboard/server.js",
     "test:login": "tsc && node dist/tests/temp_login.js",
     "test:login:simple": "tsc && node dist/tests/temp_login_simple.js",
     "test:verify": "tsc && node dist/tests/temp_verify_session.js",
@@ -36,13 +38,20 @@
     "test:final": "tsc && node dist/tests/temp_final_buy_test.js",
     "test:last_agah": "tsc && node dist/tests/temp_last_agah_attempt.js"
   },
-  "keywords": ["playwright", "automation", "agah", "trading"],
+  "keywords": [
+    "playwright",
+    "automation",
+    "agah",
+    "trading"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "express": "^4.18.2",
     "playwright": "^1.48.0"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2"
   }
