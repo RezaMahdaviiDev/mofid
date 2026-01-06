@@ -1,0 +1,49 @@
+{
+  "name": "agah-autobuy",
+  "version": "1.0.0",
+  "description": "Agah Auto-Buy Bot - خرید خودکار در آساتریدر",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsc && node dist/main.js",
+    "test:login": "tsc && node dist/tests/temp_login.js",
+    "test:login:simple": "tsc && node dist/tests/temp_login_simple.js",
+    "test:verify": "tsc && node dist/tests/temp_verify_session.js",
+    "test:buy": "tsc && node dist/tests/temp_find_buy.js",
+    "test:dialog": "tsc && node dist/tests/temp_dialog.js",
+    "test:manual": "tsc && node dist/tests/temp_manual_click.js",
+    "test:quick": "tsc && node dist/tests/temp_quick_capture.js",
+    "test:toast": "tsc && node dist/tests/temp_check_toast.js",
+    "test:marketwatch": "tsc && node dist/tests/temp_marketwatch_buy.js",
+    "test:wait": "tsc && node dist/tests/temp_wait_for_setup.js",
+    "test:list": "tsc && node dist/tests/temp_list_all_buttons.js",
+    "test:table": "tsc && node dist/tests/temp_check_table.js",
+    "test:guide": "tsc && node dist/tests/temp_add_symbol_guide.js",
+    "test:easy:login": "tsc && node dist/tests/easy/temp_login.js",
+    "test:easy:login:auto": "tsc && node dist/tests/easy/temp_login_auto.js",
+    "test:easy:smart": "tsc && node dist/tests/easy/temp_smart_test.js",
+    "test:easy:execute": "tsc && node dist/tests/easy/temp_real_buy_test.js",
+    "test:easy:speed": "tsc && node dist/tests/easy/test_speed.js",
+    "test:easy:m2": "tsc && node dist/tests/easy/test_model_2.js",
+    "test:easy:m3": "tsc && node dist/tests/easy/test_model_3.js",
+    "test:easy:m4": "tsc && node dist/tests/easy/test_model_4.js",
+    "test:easy:api": "tsc && node dist/tests/easy/test_api_speed.js",
+    "test:easy:api:fix": "tsc && node dist/tests/easy/test_api_fix.js",
+    "test:easy:discovery": "tsc && node dist/tests/easy/temp_discovery.js",
+    "test:easy:scan": "tsc && node dist/tests/easy/temp_deep_scan.js",
+    "test:omni": "tsc && node dist/tests/temp_omni_search.js",
+    "test:final": "tsc && node dist/tests/temp_final_buy_test.js",
+    "test:last_agah": "tsc && node dist/tests/temp_last_agah_attempt.js"
+  },
+  "keywords": ["playwright", "automation", "agah", "trading"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "playwright": "^1.48.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

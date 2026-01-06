@@ -1,0 +1,250 @@
+{
+    "title": "Recording 1/6/2026 at 11:17:35 AM",
+    "steps": [
+        {
+            "type": "setViewport",
+            "width": 1920,
+            "height": 525,
+            "deviceScaleFactor": 1,
+            "isMobile": false,
+            "hasTouch": false,
+            "isLandscape": false
+        },
+        {
+            "type": "navigate",
+            "url": "https://online.agah.com/auth/portfolio/asset",
+            "assertedEvents": [
+                {
+                    "type": "navigation",
+                    "url": "https://online.agah.com/auth/portfolio/asset",
+                    "title": "آساتریدر | عیار - سبد سهام"
+                }
+            ]
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/خریدِ نمادِ افران",
+                    "aria/[role=\"generic\"]"
+                ],
+                [
+                    "div.ag-row-hover button.green-c > i"
+                ],
+                [
+                    "xpath//html/body/tse-root/div/tse-auth-area/tse-online/tse-main-area/section/div/div/tse-portfolio-page/div/tse-asset-page/tse-asset-management/as-split/as-split-area[1]/tse-asset-list/div/div[2]/ag-grid-angular/div/div[2]/div[2]/div[3]/div[1]/div[2]/div/div[3]/div[15]/tse-asset-list-action-cell/button[1]/i"
+                ],
+                [
+                    "pierce/div.ag-row-hover button.green-c > i"
+                ]
+            ],
+            "offsetY": 7.828125,
+            "offsetX": 2.75
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "div:nth-of-type(5) > div:nth-of-type(1) > div.quantity"
+                ],
+                [
+                    "xpath//html/body/p-dynamicdialog/div/div/div[2]/tse-order-entry-dialog/div[2]/div/div[2]/tse-order-book/div/tse-order-book-table/div/div/div[2]/cdk-virtual-scroll-viewport/div[1]/div[5]/div[1]/div[3]"
+                ],
+                [
+                    "pierce/div:nth-of-type(5) > div:nth-of-type(1) > div.quantity"
+                ],
+                [
+                    "text/42,734"
+                ]
+            ],
+            "offsetY": 21.5,
+            "offsetX": 53
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/قیمت42734ریال"
+                ],
+                [
+                    "#pn_id_70_content > div > div:nth-of-type(1) > div:nth-of-type(1) input"
+                ],
+                [
+                    "xpath///*[@id=\"pn_id_70_content\"]/div/div[1]/div[1]/div/input"
+                ],
+                [
+                    "pierce/#pn_id_70_content > div > div:nth-of-type(1) > div:nth-of-type(1) input"
+                ]
+            ],
+            "offsetY": 20.5,
+            "offsetX": 59.703125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/قیمت42734ریال"
+                ],
+                [
+                    "#pn_id_70_content > div > div:nth-of-type(1) > div:nth-of-type(1) input"
+                ],
+                [
+                    "xpath///*[@id=\"pn_id_70_content\"]/div/div[1]/div[1]/div/input"
+                ],
+                [
+                    "pierce/#pn_id_70_content > div > div:nth-of-type(1) > div:nth-of-type(1) input"
+                ]
+            ],
+            "offsetY": 10.5,
+            "offsetX": 67.703125
+        },
+        {
+            "type": "change",
+            "value": "4,2730",
+            "selectors": [
+                [
+                    "aria/قیمت42734ریال"
+                ],
+                [
+                    "#pn_id_70_content > div > div:nth-of-type(1) > div:nth-of-type(1) input"
+                ],
+                [
+                    "xpath///*[@id=\"pn_id_70_content\"]/div/div[1]/div[1]/div/input"
+                ],
+                [
+                    "pierce/#pn_id_70_content > div > div:nth-of-type(1) > div:nth-of-type(1) input"
+                ]
+            ],
+            "target": "main"
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/خرید[role=\"button\"]"
+                ],
+                [
+                    "button.mg-r-10"
+                ],
+                [
+                    "xpath///*[@id=\"pn_id_70_content\"]/div/div[2]/div[2]/div[2]/button[2]"
+                ],
+                [
+                    "pierce/button.mg-r-10"
+                ]
+            ],
+            "offsetY": 8.5,
+            "offsetX": 61.5
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/ماشین حساب"
+                ],
+                [
+                    "#pn_id_70_content > div > div:nth-of-type(1) div > button"
+                ],
+                [
+                    "xpath///*[@id=\"pn_id_70_content\"]/div/div[1]/div[2]/div/div/button"
+                ],
+                [
+                    "pierce/#pn_id_70_content > div > div:nth-of-type(1) div > button"
+                ]
+            ],
+            "offsetY": 22.5,
+            "offsetX": 12.5
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/10,081,498 ریال"
+                ],
+                [
+                    "tse-order-quantity-calculator > div > button"
+                ],
+                [
+                    "xpath//html/body/div[2]/div/tse-order-quantity-calculator/div/button"
+                ],
+                [
+                    "pierce/tse-order-quantity-calculator > div > button"
+                ]
+            ],
+            "offsetY": 14.5,
+            "offsetX": 51.5
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/ ثبت حجم"
+                ],
+                [
+                    "form > div > button"
+                ],
+                [
+                    "xpath//html/body/div[2]/div/tse-order-quantity-calculator/form/div/button"
+                ],
+                [
+                    "pierce/form > div > button"
+                ],
+                [
+                    "text/ثبت حجم"
+                ]
+            ],
+            "offsetY": 18.5,
+            "offsetX": 37.5
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/خرید[role=\"button\"]",
+                    "aria/[role=\"generic\"]"
+                ],
+                [
+                    "div > div:nth-of-type(2) > div.flex > div.p-relative i"
+                ],
+                [
+                    "xpath///*[@id=\"pn_id_70_content\"]/div/div[2]/div[2]/div[2]/button[2]/i"
+                ],
+                [
+                    "pierce/div > div:nth-of-type(2) > div.flex > div.p-relative i"
+                ]
+            ],
+            "offsetY": 4,
+            "offsetX": 4.734375
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/ تایید",
+                    "aria/[role=\"generic\"]"
+                ],
+                [
+                    "p-dynamicdialog.ng-tns-c3631402631-13 button.btn-success > i"
+                ],
+                [
+                    "xpath//html/body/p-dynamicdialog[2]/div/div/div[2]/tse-send-order-confirmation-dialog/div/div[2]/div/button[1]/i"
+                ],
+                [
+                    "pierce/p-dynamicdialog.ng-tns-c3631402631-13 button.btn-success > i"
+                ]
+            ],
+            "offsetY": 4,
+            "offsetX": 0.46875
+        }
+    ]
+}
