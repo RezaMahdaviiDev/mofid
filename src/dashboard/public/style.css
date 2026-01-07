@@ -162,6 +162,86 @@ button:disabled {
     font-weight: 500;
 }
 
+.status-info.warning {
+    background: #fff3e0;
+    border-left-color: #ff9800;
+    color: #e65100;
+}
+
+/* ========== استایل بخش دارایی ========== */
+.asset-section {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border: 2px solid #4caf50;
+}
+
+.asset-display {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.asset-balance {
+    text-align: center;
+}
+
+.balance-value {
+    font-size: 2em;
+    font-weight: 700;
+    color: #2e7d32;
+    margin-bottom: 10px;
+}
+
+.asset-change {
+    font-size: 1.1em;
+    font-weight: 600;
+    margin: 10px 0;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.asset-change.increased {
+    color: #2e7d32;
+    background: #e8f5e9;
+}
+
+.asset-change.decreased {
+    color: #c62828;
+    background: #ffebee;
+}
+
+.asset-change.unchanged {
+    color: #757575;
+    background: #f5f5f5;
+}
+
+.validation-status {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.95em;
+    font-weight: 500;
+}
+
+.validation-status.success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-left: 4px solid #4caf50;
+}
+
+.validation-status.warning {
+    background: #fff3e0;
+    color: #e65100;
+    border-left: 4px solid #ff9800;
+}
+
+.validation-status.error {
+    background: #ffebee;
+    color: #c62828;
+    border-left: 4px solid #f44336;
+}
+
+/* ========== استایل تاریخچه معاملات ========== */
 .history-list {
     max-height: 300px;
     overflow-y: auto;
@@ -176,6 +256,57 @@ button:disabled {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+.history-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.order-type {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.order-type.buy {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.order-type.sell {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.validation-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 8px;
+    font-size: 0.75em;
+    font-weight: 500;
+    margin-right: auto;
+}
+
+.validation-badge.success {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.validation-badge.warning {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.validation-badge.error {
+    background: #ffebee;
+    color: #c62828;
+}
+
 .history-item p {
     margin: 5px 0;
     color: #555;
@@ -184,6 +315,12 @@ button:disabled {
 .history-item .time {
     font-size: 0.9em;
     color: #999;
+}
+
+.history-item .asset-change {
+    font-size: 0.9em;
+    margin-top: 8px;
+    padding: 6px;
 }
 
 footer {
@@ -209,6 +346,194 @@ footer {
     100% { transform: rotate(360deg); }
 }
 
+/* ========== استایل بخش لاگ‌ها ========== */
+.logs-section {
+    margin-top: 30px;
+}
+
+.logs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.logs-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.log-filter {
+    padding: 8px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+}
+
+.log-filter:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.btn-refresh {
+    width: auto;
+    padding: 8px 16px;
+    font-size: 14px;
+    background: #28a745;
+}
+
+.btn-refresh:hover {
+    background: #218838;
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+}
+
+.logs-container {
+    max-height: 600px;
+    overflow-y: auto;
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+}
+
+.log-entry {
+    padding: 15px;
+    margin-bottom: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.log-entry:hover {
+    transform: translateX(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.log-level {
+    font-weight: 700;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.log-location {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #666;
+    flex: 1;
+}
+
+.log-time {
+    font-size: 12px;
+    color: #999;
+}
+
+.log-message {
+    margin: 10px 0;
+    font-weight: 500;
+    color: #333;
+}
+
+.log-data {
+    margin: 10px 0;
+    padding: 10px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    overflow-x: auto;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.log-error {
+    margin: 10px 0;
+    padding: 10px;
+    background: #ffebee;
+    border-left: 3px solid #f44336;
+    border-radius: 4px;
+}
+
+.log-error strong {
+    color: #c62828;
+}
+
+.log-stack {
+    margin-top: 10px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #666;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.log-performance {
+    margin: 10px 0;
+    padding: 8px;
+    background: #e3f2fd;
+    border-left: 3px solid #2196F3;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.no-logs {
+    text-align: center;
+    padding: 20px;
+    color: #999;
+    font-style: italic;
+}
+
+.error {
+    text-align: center;
+    padding: 20px;
+    color: #f44336;
+}
+
+/* Scrollbar styling */
+.logs-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.logs-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.logs-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.logs-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
     header h1 {
@@ -221,6 +546,26 @@ footer {
     
     section {
         padding: 15px;
+    }
+    
+    .logs-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .logs-controls {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .log-filter,
+    .btn-refresh {
+        width: 100%;
+    }
+    
+    .log-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
 

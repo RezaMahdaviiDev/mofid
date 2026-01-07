@@ -14,9 +14,9 @@
         </header>
 
         <main>
-            <!-- فرم خرید -->
+            <!-- فرم سفارش (خرید / فروش) -->
             <section class="buy-section">
-                <h2>خرید سهم</h2>
+                <h2>سفارش سهم (خرید / فروش)</h2>
                 <form id="buyForm">
                     <div class="form-group">
                         <label for="symbol">نماد:</label>
@@ -43,6 +43,14 @@
                     </div>
                     
                     <div class="form-group">
+                        <label for="side">نوع سفارش:</label>
+                        <select id="side" name="side">
+                            <option value="buy" selected>خرید</option>
+                            <option value="sell">فروش</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
                         <label class="checkbox-label">
                             <input type="checkbox" id="debug" name="debug">
                             نمایش مرورگر (برای دیباگ)
@@ -61,11 +69,40 @@
                 </div>
             </section>
 
+            <!-- نمایش دارایی -->
+            <section class="asset-section">
+                <h2>💰 موجودی نقدی</h2>
+                <div id="assetDisplay" class="asset-display">
+                    <p>در حال بارگذاری...</p>
+                </div>
+            </section>
+
             <!-- تاریخچه -->
             <section class="history-section">
-                <h2>تاریخچه خریدها</h2>
+                <h2>تاریخچه معاملات</h2>
                 <div id="history" class="history-list">
-                    <p>هنوز خریدی انجام نشده است</p>
+                    <p>هنوز معامله‌ای انجام نشده است</p>
+                </div>
+            </section>
+
+            <!-- لاگ‌ها -->
+            <section class="logs-section">
+                <div class="logs-header">
+                    <h2>📋 لاگ‌های سیستم</h2>
+                    <div class="logs-controls">
+                        <select id="logTypeFilter" class="log-filter">
+                            <option value="all">همه انواع</option>
+                            <option value="buy">خرید</option>
+                            <option value="info">اطلاعات</option>
+                            <option value="warn">هشدار</option>
+                            <option value="error">خطا</option>
+                            <option value="performance">عملکرد</option>
+                        </select>
+                        <button id="refreshLogsBtn" class="btn-refresh">🔄 به‌روزرسانی</button>
+                    </div>
+                </div>
+                <div id="logsContainer" class="logs-container">
+                    <p class="loading">در حال بارگذاری لاگ‌ها...</p>
                 </div>
             </section>
         </main>

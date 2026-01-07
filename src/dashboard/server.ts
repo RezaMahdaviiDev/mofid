@@ -14,9 +14,11 @@ app.use(express.json());
 // API Routes
 import { buyRoute } from './routes/buy';
 import { loginRoute } from './routes/login';
+import { logsRoute } from './routes/logs';
 
 app.use('/api/buy', buyRoute);
 app.use('/api/login', loginRoute);
+app.use('/api/logs', logsRoute);
 
 // Serve index.html for all routes
 app.get('*', (req, res) => {

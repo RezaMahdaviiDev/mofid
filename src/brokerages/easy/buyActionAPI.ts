@@ -3,247 +3,177 @@ import { PerformanceLogger } from './logger';
 import { BuyOrder } from './buyAction';
 import { executeFastBuy } from './buyAction';
 import { logger } from '../../core/advancedLogger';
+import { EasyTraderAPIClient } from './api/client';
+import { placeOrder, getOrders } from './api/order';
+import { APIError } from './api/types';
 
 /**
- * دریافت هدرهای معتبر از ترافیک شبکه با استفاده از page.route()
- * این تابع از route interception استفاده می‌کند تا توکن را از درخواست‌های واقعی استخراج کند
+ * ارسال مستقیم سفارش خرید/فروش از طریق API (سریع‌ترین روش)
+ * برای فروش، باید order.side === 'sell' باشد و در payload مقدار side = 1 تنظیم می‌شود.
+ * 
+ * این تابع از API Client جدید استفاده می‌کند و interface آن برای سازگاری با routes حفظ شده است.
+ * 
+ * @param page - صفحه Playwright
+ * @param order - اطلاعات سفارش
+ * @returns مدت زمان اجرا به میلی‌ثانیه
  */
-async function getAuthHeaders(page: Page): Promise<Record<string, string>> {
-  console.log('🕵️ در حال استخراج توکن احراز هویت با page.route()...');
-  
-  // استفاده از page.route() برای intercept کردن درخواست‌ها
-  let capturedHeaders: Record<string, string> | null = null;
-  let requestFound = false;
-  
-  const routeHandler = async (route: any) => {
-    const request = route.request();
-    const url = request.url();
-    const headers = request.headers();
-    
-    // بررسی اینکه آیا این درخواست به API اصلی است و توکن دارد
-    if (url.includes('api-mts.orbis.easytrader.ir') && 
-        url.includes('/api/v2/') &&
-        request.method() !== 'OPTIONS' &&
-        (headers['authorization'] || headers['Authorization'])) {
-      
-      if (!capturedHeaders) {
-        capturedHeaders = { ...headers };
-        requestFound = true;
-        console.log('✅ توکن از درخواست API استخراج شد:', url);
-      }
-    }
-    
-    // ادامه درخواست
-    await route.continue();
-  };
-  
-  // فعال کردن route interception
-  await page.route('**/*', routeHandler);
-  
-  try {
-    // منتظر می‌مانیم تا یک درخواست با توکن پیدا شود
-    console.log('⏳ منتظر درخواست API با توکن...');
-    
-    await page.waitForRequest(
-      req => {
-        const url = req.url();
-        const headers = req.headers();
-        return url.includes('api-mts.orbis.easytrader.ir') && 
-               url.includes('/api/v2/') &&
-               req.method() !== 'OPTIONS' &&
-               !!(headers['authorization'] || headers['Authorization']);
-      },
-      { timeout: 10000 }
-    );
-    
-    // کمی صبر می‌کنیم تا route handler اجرا شود
-    await page.waitForTimeout(500);
-    
-    // غیرفعال کردن route interception
-    await page.unroute('**/*', routeHandler);
-    
-    if (capturedHeaders) {
-      const headers = capturedHeaders;
-    
-      console.log('🔑 هدرهای موجود:', Object.keys(headers).filter(k => 
-        k.toLowerCase().includes('auth') || 
-        k.toLowerCase().includes('token') ||
-        k.toLowerCase().includes('cookie')
-      ));
-      
-      // فیلتر کردن هدرهای مهم
-      const authHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'fa',
-        'Referer': 'https://d.easytrader.ir/',
-        'Origin': 'https://d.easytrader.ir'
-      };
-
-      // کپی کردن توکن Authorization اگر وجود داشته باشد
-      if (headers['authorization']) {
-        authHeaders['Authorization'] = headers['authorization'];
-        console.log('✅ توکن Authorization استخراج شد (lowercase).');
-      } else if (headers['Authorization']) {
-        authHeaders['Authorization'] = headers['Authorization'];
-        console.log('✅ توکن Authorization استخراج شد (uppercase).');
-      } else {
-        console.warn('⚠️ توکن Authorization در هدرها پیدا نشد.');
-        // تلاش برای استخراج از کوکی‌ها
-        const cookies = await page.context().cookies();
-        if (cookies.length > 0) {
-          const cookieString = cookies.map(c => `${c.name}=${c.value}`).join('; ');
-          authHeaders['Cookie'] = cookieString;
-          console.log('✅ کوکی‌ها اضافه شدند.');
-        }
-      }
-      
-      // کپی کردن سایر هدرهای احتمالی امنیتی
-      if (headers['x-requested-with']) authHeaders['X-Requested-With'] = headers['x-requested-with'];
-      if (headers['x-csrf-token']) authHeaders['X-CSRF-Token'] = headers['x-csrf-token'];
-      if (headers['cookie'] && !authHeaders['Cookie']) {
-        authHeaders['Cookie'] = headers['cookie'];
-      }
-      
-      return authHeaders;
-    } else {
-      throw new Error('توکن پیدا نشد');
-    }
-
-  } catch (e: any) {
-    // غیرفعال کردن route interception در صورت خطا
-    try {
-      await page.unroute('**/*', routeHandler);
-    } catch {}
-    
-    console.warn('⚠️ نتوانستیم هدرها را از شبکه استخراج کنیم:', e.message);
-    console.warn('💡 از هدرهای پیش‌فرض + کوکی‌ها استفاده می‌شود.');
-    
-    // تلاش برای استفاده از کوکی‌های موجود
-    const cookies = await page.context().cookies();
-    const defaultHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json, text/plain, */*',
-      'Referer': 'https://d.easytrader.ir/',
-      'Origin': 'https://d.easytrader.ir'
-    };
-    
-    if (cookies.length > 0) {
-      defaultHeaders['Cookie'] = cookies.map(c => `${c.name}=${c.value}`).join('; ');
-      console.log('✅ کوکی‌ها اضافه شدند (fallback).');
-    }
-    
-    return defaultHeaders;
-  }
-}
-
-/**
- * ارسال مستقیم سفارش خرید از طریق API (سریع‌ترین روش)
- */
-export async function executeAPIBuy(page: Page, order: BuyOrder) {
-  console.log('\n--- شروع فرآیند خرید API مستقیم (نسخه اصلاح شده) ---');
-  logger.info('buyActionAPI.ts:executeAPIBuy', 'Starting API buy process', { model: 5, order });
+export async function executeAPIBuy(page: Page, order: BuyOrder): Promise<number> {
+  const sideValue = order.side === 'sell' ? 1 : 0; // 0 = خرید، 1 = فروش
+  console.log('\n--- شروع فرآیند ' + (sideValue === 0 ? 'خرید' : 'فروش') + ' API مستقیم (نسخه refactored) ---');
+  logger.info('buyActionAPI.ts:executeAPIBuy', 'Starting API buy process', { model: 5, side: sideValue, order });
   PerformanceLogger.start('Total_Execution_API');
 
-  PerformanceLogger.start('Prepare_Headers');
-  
-  // استخراج هوشمند هدرها
-  const headers = await getAuthHeaders(page);
-  
-  // ساخت payload دقیق
-  const now = new Date();
-  const createDateTime = now.toLocaleString('en-US', {
-    month: 'numeric',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true
-  });
-
-  // Mapping نام نماد به ISIN
-  const symbolToIsin: Record<string, string> = {
-    'زر': 'IRTKZARF0001',
-    // می‌توانید نمادهای دیگر را اضافه کنید
-  };
-
-  const symbolIsin = symbolToIsin[order.symbol] || 'IRTKZARF0001'; // fallback به زر
-
-  const payload = {
-    order: {
-      price: parseInt(order.price),
-      quantity: parseInt(order.quantity),
-      side: 0, // 0 = خرید
-      validityType: 0, // 0 = روزانه
-      createDateTime: createDateTime,
-      commission: 0.0012,
-      symbolIsin: symbolIsin, // استفاده از mapping
-      symbolName: order.symbol,
-      orderModelType: 1,
-      orderFrom: 34
-    }
-  };
-  
-  console.log(`📋 سفارش: ${order.symbol} (ISIN: ${symbolIsin}), قیمت: ${order.price}, تعداد: ${order.quantity}`);
-
-  PerformanceLogger.end('Prepare_Headers');
-
-  PerformanceLogger.start('API_Call');
-  
   try {
-    // Log API request
-    logger.logAPIRequest('https://api-mts.orbis.easytrader.ir/core/api/v2/order', 'POST', payload);
+    // ایجاد API Client
+    const client = new EasyTraderAPIClient(page);
     
-    // استفاده از context request برای ارسال که کوکی‌ها را هم خودکار مدیریت می‌کند
-    const response = await page.request.post('https://api-mts.orbis.easytrader.ir/core/api/v2/order', {
-      headers: headers,
-      data: payload
-    });
-
-    const status = response.status();
-    let responseData: any = {};
+    // استفاده از placeOrder از API Client
+    const result = await placeOrder(client, order);
     
+    // #region agent log
     try {
-      responseData = await response.json();
-    } catch {
-      const text = await response.text();
-      console.log('Text Response:', text);
-      responseData = { text };
-    }
-
-    PerformanceLogger.end('API_Call');
+      const fs = require('fs');
+      const path = require('path');
+      const debugLogPath = path.join(process.cwd(), '.cursor', 'debug.log');
+      const debugEntry = JSON.stringify({location:'buyActionAPI.ts:34',message:'Order placed, verifying in order list',data:{orderId:result.id,isSuccessful:result.isSuccessful},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'}) + '\n';
+      fs.appendFileSync(debugLogPath, debugEntry, 'utf8');
+    } catch (e) {}
+    // #endregion
     
-    // Log API response
-    logger.logAPIRequest('https://api-mts.orbis.easytrader.ir/core/api/v2/order', 'POST', payload, responseData, status);
-
-    if (status === 200 && responseData.isSuccessful) {
-      console.log(`✅✅✅ سفارش با موفقیت ثبت شد (API)! ID: ${responseData.id}`);
-      const totalTime = PerformanceLogger.end('Total_Execution_API');
+    console.log(`✅✅✅ سفارش با موفقیت ثبت شد (API)! ID: ${result.id}`);
+    
+    // بررسی تأیید سفارش در لیست سفارشات
+    try {
+      console.log('🔍 در حال بررسی تأیید سفارش در لیست سفارشات...');
+      PerformanceLogger.start('VerifyOrder');
       
-      // Log successful buy
-      logger.logBuy(`buy-${Date.now()}`, order, { success: true, duration: totalTime, orderId: responseData.id }, totalTime);
-      logger.logPerformance('buy-model-5', totalTime, { order, success: true });
+      // کمی صبر می‌کنیم تا سفارش در سیستم ثبت شود
+      await page.waitForTimeout(2000);
       
-      return totalTime;
-    } else {
-      console.warn(`⚠️ خطا در API (Status: ${status}). پیام:`, JSON.stringify(responseData));
-      logger.warn('buyActionAPI.ts:executeAPIBuy', 'API call failed', { status, response: responseData, payload });
+      const ordersList = await getOrders(client);
       
-      // اگر خطا مربوط به محدوده قیمت/حجم باشد، یعنی احراز هویت درست بوده اما دیتا غلط است
-      if (status === 400 || (responseData.message && responseData.message.includes('محدوده'))) {
-         console.log('💡 نکته: احراز هویت موفق بود، اما پارامترهای سفارش رد شد.');
+      // #region agent log
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const debugLogPath = path.join(process.cwd(), '.cursor', 'debug.log');
+        const debugEntry = JSON.stringify({location:'buyActionAPI.ts:50',message:'Orders list retrieved for verification',data:{ordersCount:ordersList.orders?.length || 0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'}) + '\n';
+        fs.appendFileSync(debugLogPath, debugEntry, 'utf8');
+      } catch (e) {}
+      // #endregion
+      
+      // پیدا کردن سفارش در لیست
+      const placedOrder = ordersList.orders?.find(o => o.id === result.id);
+      
+      if (placedOrder) {
+        // #region agent log
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          const debugLogPath = path.join(process.cwd(), '.cursor', 'debug.log');
+          const debugEntry = JSON.stringify({location:'buyActionAPI.ts:62',message:'Order found in list',data:{orderId:placedOrder.id,orderState:placedOrder.orderStateStr,executedQuantity:placedOrder.executedQuantity,quantity:placedOrder.quantity},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n';
+          fs.appendFileSync(debugLogPath, debugEntry, 'utf8');
+        } catch (e) {}
+        // #endregion
+        
+        console.log(`📋 سفارش در لیست یافت شد:`);
+        console.log(`   - وضعیت: ${placedOrder.orderStateStr}`);
+        console.log(`   - تعداد کل: ${placedOrder.quantity}`);
+        console.log(`   - تعداد اجرا شده: ${placedOrder.executedQuantity}`);
+        
+        const verifyDuration = PerformanceLogger.end('VerifyOrder');
+        
+        // بررسی اینکه آیا سفارش کامل اجرا شده است
+        if (placedOrder.executedQuantity === placedOrder.quantity) {
+          console.log(`✅✅✅ سفارش به طور کامل اجرا شد!`);
+          logger.info('buyActionAPI.ts:executeAPIBuy', 'Order fully executed', {
+            orderId: result.id,
+            executedQuantity: placedOrder.executedQuantity,
+            totalQuantity: placedOrder.quantity
+          });
+        } else if (placedOrder.executedQuantity > 0) {
+          console.log(`⚠️ سفارش جزئی اجرا شد: ${placedOrder.executedQuantity} از ${placedOrder.quantity}`);
+          logger.warn('buyActionAPI.ts:executeAPIBuy', 'Order partially executed', {
+            orderId: result.id,
+            executedQuantity: placedOrder.executedQuantity,
+            totalQuantity: placedOrder.quantity
+          });
+        } else {
+          console.log(`⚠️ سفارش ثبت شده اما هنوز اجرا نشده (در صف: ${placedOrder.orderStateStr})`);
+          logger.info('buyActionAPI.ts:executeAPIBuy', 'Order placed but not executed yet', {
+            orderId: result.id,
+            orderState: placedOrder.orderStateStr,
+            quantity: placedOrder.quantity
+          });
+        }
+      } else {
+        // #region agent log
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          const debugLogPath = path.join(process.cwd(), '.cursor', 'debug.log');
+          const debugEntry = JSON.stringify({location:'buyActionAPI.ts:95',message:'Order NOT found in list',data:{expectedOrderId:result.id,ordersCount:ordersList.orders?.length || 0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'}) + '\n';
+          fs.appendFileSync(debugLogPath, debugEntry, 'utf8');
+        } catch (e) {}
+        // #endregion
+        
+        console.log(`⚠️ هشدار: سفارش در لیست سفارشات یافت نشد!`);
+        console.log(`   - ID انتظار: ${result.id}`);
+        console.log(`   - تعداد سفارشات در لیست: ${ordersList.orders?.length || 0}`);
+          logger.warn('buyActionAPI.ts:executeAPIBuy', 'Order not found in verification list', {
+            expectedOrderId: result.id,
+            ordersCount: ordersList.orders?.length || 0
+          });
       }
-
-      const apiTime = PerformanceLogger.end('Total_Execution_API');
-      console.log(`🔄 فال‌بک به روش UI...`);
-      const uiTime = await executeFastBuy(page, order);
-      return apiTime + uiTime;
+    } catch (verifyError: any) {
+      // #region agent log
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const debugLogPath = path.join(process.cwd(), '.cursor', 'debug.log');
+        const debugEntry = JSON.stringify({location:'buyActionAPI.ts:109',message:'Verification failed',data:{errorMessage:verifyError.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'}) + '\n';
+        fs.appendFileSync(debugLogPath, debugEntry, 'utf8');
+      } catch (e) {}
+      // #endregion
+      
+      console.warn(`⚠️ خطا در بررسی تأیید سفارش: ${verifyError.message}`);
+      console.log(`   (سفارش ثبت شده اما تأیید نشد)`);
+      logger.warn('buyActionAPI.ts:executeAPIBuy', 'Order verification failed', {
+        orderId: result.id,
+        errorMessage: verifyError.message
+      });
+      // ادامه می‌دهیم - خطای تأیید مانع از return نمی‌شود
     }
+    
+    const totalTime = PerformanceLogger.end('Total_Execution_API');
+    
+    return totalTime;
 
   } catch (error: any) {
-    console.error('❌ خطای ارتباطی در API:', error.message);
-    logger.error('buyActionAPI.ts:executeAPIBuy', 'API call exception', error, { order, payload });
-    return await executeFastBuy(page, order);
+    const apiTime = PerformanceLogger.end('Total_Execution_API');
+    
+    // اگر خطا از نوع APIError باشد
+    if (error instanceof APIError) {
+      console.warn(`⚠️ خطا در API. پیام: ${error.message}`);
+      
+      // اگر خطا مربوط به محدوده قیمت/حجم باشد، یعنی احراز هویت درست بوده اما دیتا غلط است
+      if (error.statusCode === 400 || (error.message && error.message.includes('محدوده'))) {
+        console.log('💡 نکته: احراز هویت موفق بود، اما پارامترهای سفارش رد شد.');
+      }
+      
+      logger.warn('buyActionAPI.ts:executeAPIBuy', 'API call failed', {
+        error: error.message,
+        statusCode: error.statusCode,
+        order
+      });
+    } else {
+      console.error('❌ خطای ارتباطی در API:', error.message);
+      logger.error('buyActionAPI.ts:executeAPIBuy', 'API call exception', error, { order });
+    }
+    
+    // Fallback به روش UI
+    console.log(`🔄 فال‌بک به روش UI...`);
+    const uiTime = await executeFastBuy(page, order);
+    return apiTime + uiTime;
   }
 }

@@ -1,0 +1,35 @@
+{
+  "date": "2026-01-07",
+  "summary": {
+    "totalBuys": 2,
+    "successfulBuys": 2,
+    "failedBuys": 0,
+    "successRate": 100,
+    "averageDuration": 393,
+    "minDuration": 381,
+    "maxDuration": 404
+  },
+  "buys": [
+    {
+      "orderId": "buy-1767709300218",
+      "symbol": "زر",
+      "price": "590000",
+      "quantity": "2",
+      "duration": 404,
+      "success": true,
+      "timestamp": 1767709300218
+    },
+    {
+      "orderId": "test-buy-123",
+      "symbol": "Ø²Ø±",
+      "price": "590000",
+      "quantity": "2",
+      "duration": 381,
+      "success": true,
+      "timestamp": 1767708995472
+    }
+  ],
+  "errors": [],
+  "performance": [],
+  "models": {}
+}

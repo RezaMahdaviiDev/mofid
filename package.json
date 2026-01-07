@@ -47,6 +47,8 @@
     "test:integration:all": "npm run test:integration:model1 && npm run test:integration:model4 && npm run test:integration:model5",
     "test:performance:benchmark": "tsc && node dist/tests/performance/test-benchmark.js",
     "test:scenario:basic": "tsc && node dist/tests/scenarios/test-basic-buy.js",
+    "test:analyzer": "tsc && node dist/tests/test-analyzer.js",
+    "analyze": "tsc && node dist/tests/test-analyzer.js",
     "test:all": "npm run test:unit:all && npm run test:integration:all && npm run test:performance:benchmark && npm run test:scenario:basic"
   },
   "keywords": [

@@ -1,6 +1,8 @@
-# فایل‌های ضروری برای بسته‌بندی
+# راهنمای بسته‌بندی پروژه
 
-## فایل‌های کد منبع (src/)
+## فایل‌های ضروری برای بسته‌بندی
+
+### فایل‌های کد منبع (src/)
 
 ```
 src/
@@ -16,7 +18,7 @@ src/
         └── logger.ts
 ```
 
-## فایل‌های تست (tests/)
+### فایل‌های تست (tests/)
 
 ```
 tests/
@@ -28,7 +30,7 @@ tests/
     └── test_api_speed.ts
 ```
 
-## فایل‌های پیکربندی
+### فایل‌های پیکربندی
 
 ```
 package.json
@@ -36,26 +38,26 @@ tsconfig.json
 .gitignore (در صورت وجود)
 ```
 
-## فایل‌های مستندات
+### فایل‌های مستندات
 
 ```
 README.md
-SPEED_REPORT.md
-JOURNAL.md
-Coding-Vibe-Prompt-Important-Notes.md
+docs/
 ```
 
-## فایل‌های ضبط شده (Recordings) - اختیاری
+**نکته**: با ساختار جدید، تمام مستندات در پوشه `docs/` قرار دارند.
+
+### فایل‌های ضبط شده (Recordings) - اختیاری
 
 ```
 Recording 1_6_2026 at 11_17_35 AM.json
 6 (recording file)
 7 (recording file)
 8 (recording file)
-d.easytrader.ir.har (فایل HAR برای تحلیل API)
+docs/archive/d.easytrader.ir.har (فایل HAR برای تحلیل API)
 ```
 
-## فایل‌های حذف شده (نباید در ZIP باشند)
+### فایل‌های حذف شده (نباید در ZIP باشند)
 
 ```
 .user-data/          # حاوی session و اطلاعات حساس
@@ -73,15 +75,11 @@ logs/                # لاگ‌های موقت
 Compress-Archive -Path `
   src, `
   tests, `
+  docs, `
   package.json, `
+  package-lock.json, `
   tsconfig.json, `
-  README.md, `
-  SPEED_REPORT.md, `
-  JOURNAL.md, `
-  Coding-Vibe-Prompt-Important-Notes.md, `
-  "Recording 1_6_2026 at 11_17_35 AM.json", `
-  6, 7, 8, `
-  d.easytrader.ir.har `
+  README.md `
   -DestinationPath agah-autobuy-project.zip -Force
 ```
 
@@ -91,15 +89,11 @@ Compress-Archive -Path `
 zip -r agah-autobuy-project.zip \
   src/ \
   tests/ \
+  docs/ \
   package.json \
+  package-lock.json \
   tsconfig.json \
-  README.md \
-  SPEED_REPORT.md \
-  JOURNAL.md \
-  Coding-Vibe-Prompt-Important-Notes.md \
-  "Recording 1_6_2026 at 11_17_35 AM.json" \
-  6 7 8 \
-  d.easytrader.ir.har
+  README.md
 ```
 
 ---
@@ -111,4 +105,5 @@ zip -r agah-autobuy-project.zip \
 - [ ] فایل‌های حساس (.user-data) حذف شده‌اند
 - [ ] node_modules حذف شده است
 - [ ] README.md کامل و به‌روز است
+- [ ] تمام مستندات در پوشه `docs/` قرار دارند
 
