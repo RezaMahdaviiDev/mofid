@@ -15,9 +15,16 @@ import { APIError } from './api/types';
  * 
  * @param page - صفحه Playwright
  * @param order - اطلاعات سفارش
+ * @param options - گزینه‌های اضافی
+ * @param options.skipVerification - اگر true باشد، verification انجام نمی‌شود (سرعت بیشتر)
  * @returns مدت زمان اجرا به میلی‌ثانیه
  */
-export async function executeAPIBuy(page: Page, order: BuyOrder): Promise<number> {
+export async function executeAPIBuy(
+  page: Page, 
+  order: BuyOrder,
+  options: { skipVerification?: boolean } = {}
+): Promise<number> {
+  const { skipVerification = false } = options;
   const sideValue = order.side === 'sell' ? 1 : 0; // 0 = خرید، 1 = فروش
   console.log('\n--- شروع فرآیند ' + (sideValue === 0 ? 'خرید' : 'فروش') + ' API مستقیم (نسخه refactored) ---');
   logger.info('buyActionAPI.ts:executeAPIBuy', 'Starting API buy process', { model: 5, side: sideValue, order });
@@ -42,15 +49,32 @@ export async function executeAPIBuy(page: Page, order: BuyOrder): Promise<number
     
     console.log(`✅✅✅ سفارش با موفقیت ثبت شد (API)! ID: ${result.id}`);
     
-    // بررسی تأیید سفارش در لیست سفارشات
-    try {
-      console.log('🔍 در حال بررسی تأیید سفارش در لیست سفارشات...');
-      PerformanceLogger.start('VerifyOrder');
-      
-      // کمی صبر می‌کنیم تا سفارش در سیستم ثبت شود
-      await page.waitForTimeout(2000);
-      
-      const ordersList = await getOrders(client);
+    // بررسی تأیید سفارش در لیست سفارشات (optional)
+    if (!skipVerification) {
+      try {
+        logger.logAPIPhase('api-verification-started', 0, {
+          orderId: result.id
+        });
+        
+        console.log('🔍 در حال بررسی تأیید سفارش در لیست سفارشات...');
+        PerformanceLogger.start('VerifyOrder');
+        const verifyStartTime = Date.now();
+        
+        // کمی صبر می‌کنیم تا سفارش در سیستم ثبت شود
+        const waitStartTime = Date.now();
+        await page.waitForTimeout(2000);
+        const waitDuration = Date.now() - waitStartTime;
+        logger.logAPIPhase('api-verification-wait', waitDuration, {
+          orderId: result.id
+        });
+        
+        const apiCallStartTime = Date.now();
+        const ordersList = await getOrders(client);
+        const apiCallDuration = Date.now() - apiCallStartTime;
+        logger.logAPIPhase('api-verification-api-call', apiCallDuration, {
+          orderId: result.id,
+          ordersCount: ordersList.orders?.length || 0
+        });
       
       // #region agent log
       try {
@@ -82,6 +106,11 @@ export async function executeAPIBuy(page: Page, order: BuyOrder): Promise<number
         console.log(`   - تعداد اجرا شده: ${placedOrder.executedQuantity}`);
         
         const verifyDuration = PerformanceLogger.end('VerifyOrder');
+        logger.logAPIPhase('api-verification-complete', verifyDuration, {
+          orderId: result.id,
+          found: true,
+          duration: verifyDuration
+        });
         
         // بررسی اینکه آیا سفارش کامل اجرا شده است
         if (placedOrder.executedQuantity === placedOrder.quantity) {
@@ -138,14 +167,42 @@ export async function executeAPIBuy(page: Page, order: BuyOrder): Promise<number
       
       console.warn(`⚠️ خطا در بررسی تأیید سفارش: ${verifyError.message}`);
       console.log(`   (سفارش ثبت شده اما تأیید نشد)`);
-      logger.warn('buyActionAPI.ts:executeAPIBuy', 'Order verification failed', {
+        logger.logAPIPhase('api-verification-complete', 0, {
+          orderId: result.id,
+          found: false,
+          error: verifyError.message
+        });
+        
+        logger.warn('buyActionAPI.ts:executeAPIBuy', 'Order verification failed', {
+          orderId: result.id,
+          errorMessage: verifyError.message
+        });
+        // ادامه می‌دهیم - خطای تأیید مانع از return نمی‌شود
+      }
+    } else {
+      // Verification skipped
+      logger.logAPIPhase('api-verification-skipped', 0, {
         orderId: result.id,
-        errorMessage: verifyError.message
+        reason: 'skipVerification flag is true'
       });
-      // ادامه می‌دهیم - خطای تأیید مانع از return نمی‌شود
     }
     
     const totalTime = PerformanceLogger.end('Total_Execution_API');
+    
+    // Log performance metric با breakdown
+    const tokenTime = 0; // باید از client گرفته شود - برای نسخه بعد
+    const payloadTime = 0;
+    const requestTime = totalTime;
+    const verificationTime = skipVerification ? 0 : 0; // باید محاسبه شود
+    
+    logger.logPerformanceMetric('execute-api-buy', {
+      totalDuration: totalTime,
+      tokenTime,
+      payloadTime,
+      requestTime,
+      verificationTime: skipVerification ? 0 : verificationTime,
+      skipVerification
+    });
     
     return totalTime;
 

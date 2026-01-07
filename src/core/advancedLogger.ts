@@ -248,6 +248,83 @@ export class AdvancedLogger {
     const entry = this.createLogEntry(LogLevel.DEBUG, location, 'Browser state', state);
     this.writeLog(entry, `browser-${this.currentDate}.json`);
   }
+
+  /**
+   * لاگ‌گیری phase-by-phase برای API calls
+   * @param phase - نام phase (مثلاً 'token-extraction', 'payload-prep')
+   * @param duration - مدت زمان phase به میلی‌ثانیه
+   * @param data - داده‌های اضافی
+   * @param requestId - شناسه درخواست برای correlation
+   * @param sessionId - شناسه session
+   */
+  logAPIPhase(phase: string, duration: number, data?: any, requestId?: string, sessionId?: string): void {
+    const phaseData = {
+      ...data,
+      requestId: requestId || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      sessionId: sessionId || 'default',
+      phase,
+      duration
+    };
+
+    const entry: LogEntry = {
+      timestamp: Date.now(),
+      level: LogLevel.INFO,
+      location: 'api-phase',
+      message: `API Phase: ${phase}`,
+      data: phaseData,
+      performance: {
+        operation: `api-phase-${phase}`,
+        duration
+      }
+    };
+
+    this.writeLog(entry, `api-phases-${this.currentDate}.json`, 'performance');
+  }
+
+  /**
+   * لاگ‌گیری performance metrics با breakdown
+   * @param operation - نام عملیات
+   * @param metrics - metrics شامل duration breakdown
+   * @param requestId - شناسه درخواست
+   */
+  logPerformanceMetric(
+    operation: string,
+    metrics: {
+      totalDuration: number;
+      tokenTime?: number;
+      payloadTime?: number;
+      requestTime?: number;
+      verificationTime?: number;
+      retryTime?: number;
+      [key: string]: any;
+    },
+    requestId?: string
+  ): void {
+    const entry: LogEntry = {
+      timestamp: Date.now(),
+      level: LogLevel.INFO,
+      location: 'performance-metric',
+      message: `Performance Metric: ${operation}`,
+      data: {
+        ...metrics,
+        requestId: requestId || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        operation
+      },
+      performance: {
+        operation,
+        duration: metrics.totalDuration
+      }
+    };
+
+    this.writeLog(entry, `performance-metrics-${this.currentDate}.json`, 'performance');
+  }
+
+  /**
+   * تولید correlation ID برای tracking درخواست‌ها
+   */
+  generateCorrelationId(): string {
+    return `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
 }
 
 // Singleton instance

@@ -3,19 +3,22 @@ import { BrowserManager } from '../../core/browser';
 import { executeFastBuy, getCashBalance } from '../../brokerages/easy/buyAction';
 import { executeUltraBuy } from '../../brokerages/easy/buyActionUltra';
 import { executeAPIBuy } from '../../brokerages/easy/buyActionAPI';
+import { executeAPIUltraBuy } from '../../brokerages/easy/buyActionAPIUltra';
+import { EasyTraderAPIClient } from '../../brokerages/easy/api/client';
+import { executeAllModels, getBestModel, ModelExecutionResult } from '../../brokerages/easy/multiModelExecutor';
 import { logger } from '../../core/advancedLogger';
 
 const router = Router();
 
 router.post('/', async (req: Request, res: Response) => {
-  const { symbol, price, quantity, model, debug, side } = req.body;
+  const { symbol, price, quantity, model, debug, side, testAll } = req.body;
   
   // #region agent log
   try {
     const fs = require('fs');
     const path = require('path');
     const debugLogPath = path.join(process.cwd(), '.cursor', 'debug.log');
-    const debugEntry = JSON.stringify({location:'buy.ts:10',message:'Route handler entered',data:{symbol,price,quantity,model,debug,side,hasBody:!!req.body},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'}) + '\n';
+    const debugEntry = JSON.stringify({location:'buy.ts:POST',message:'Route handler entered',data:{symbol,price,quantity,model,debug,side,testAll,hasBody:!!req.body,bodyKeys:req.body?Object.keys(req.body):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n';
     fs.appendFileSync(debugLogPath, debugEntry, 'utf8');
   } catch (e) {}
   // #endregion
@@ -95,7 +98,54 @@ router.post('/', async (req: Request, res: Response) => {
     } catch (e) {}
     // #endregion
 
+    // Token pre-extraction برای API models (5 و 6)
+    // این کار در background انجام می‌شود و blocking نمی‌کند
+    if (model === '5' || model === '6') {
+      try {
+        const tempClient = new EasyTraderAPIClient(page);
+        logger.logAPIPhase('token-pre-extraction-start', 0, {
+          model,
+          method: 'background'
+        });
+        // استخراج توکن در background (اگر cache نشده باشد)
+        tempClient.getAuthHeaders().then(() => {
+          logger.logAPIPhase('token-pre-extraction-success', 0, {
+            model,
+            method: 'background'
+          });
+        }).catch((err: any) => {
+          logger.logAPIPhase('token-pre-extraction-failed', 0, {
+            model,
+            error: err.message
+          });
+          logger.warn('buy.ts:token-pre-extraction', 'Background token extraction failed', { error: err.message });
+        });
+      } catch (err: any) {
+        logger.warn('buy.ts:token-pre-extraction', 'Failed to start token pre-extraction', { error: err.message });
+      }
+    }
+
+    // #region agent log
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const debugLogPath = path.join(process.cwd(), '.cursor', 'debug.log');
+      const debugEntry = JSON.stringify({location:'buy.ts:POST',message:'Before order creation',data:{symbol,price,quantity,side,sideType:typeof side},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n';
+      fs.appendFileSync(debugLogPath, debugEntry, 'utf8');
+    } catch (e) {}
+    // #endregion
+
     const normalizedSide: 'buy' | 'sell' = side === 'sell' ? 'sell' : 'buy';
+
+    // #region agent log
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const debugLogPath = path.join(process.cwd(), '.cursor', 'debug.log');
+      const debugEntry = JSON.stringify({location:'buy.ts:POST',message:'Side normalized',data:{originalSide:side,normalizedSide},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n';
+      fs.appendFileSync(debugLogPath, debugEntry, 'utf8');
+    } catch (e) {}
+    // #endregion
 
     const order = { 
       symbol, 
@@ -103,6 +153,16 @@ router.post('/', async (req: Request, res: Response) => {
       quantity: String(quantity),
       side: normalizedSide
     };
+    
+    // #region agent log
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const debugLogPath = path.join(process.cwd(), '.cursor', 'debug.log');
+      const debugEntry = JSON.stringify({location:'buy.ts:POST',message:'Order object created',data:{order,orderSide:order.side,model},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n';
+      fs.appendFileSync(debugLogPath, debugEntry, 'utf8');
+    } catch (e) {}
+    // #endregion
     
     // خواندن موجودی قبل از خرید/فروش
     let balanceBefore: number | null = null;
@@ -181,19 +241,61 @@ router.post('/', async (req: Request, res: Response) => {
     // #endregion
     
     let duration: number;
+    let multiModelResults: ModelExecutionResult[] | undefined;
+    
     try {
-      switch (model) {
-        case '1':
-          duration = await executeFastBuy(page, order);
-          break;
-        case '4':
-          duration = await executeUltraBuy(page, order);
-          break;
-        case '5':
-          duration = await executeAPIBuy(page, order);
-          break;
-        default:
-          duration = await executeUltraBuy(page, order); // Default to model 4
+      // اگر model === 'all'، از multi-model executor استفاده می‌کنیم
+      if (model === 'all') {
+        // #region agent log
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          const debugLogPath = path.join(process.cwd(), '.cursor', 'debug.log');
+          const debugEntry = JSON.stringify({location:'buy.ts:POST',message:'Calling executeAllModels',data:{order,orderSide:order.side,testAll,testAllType:typeof testAll},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'}) + '\n';
+          fs.appendFileSync(debugLogPath, debugEntry, 'utf8');
+        } catch (e) {}
+        // #endregion
+        
+        const testAllMode = testAll === true || testAll === 'true';
+        const results = await executeAllModels(page, order, {
+          stopOnFirstSuccess: true,
+          testAll: testAllMode
+        });
+        
+        multiModelResults = results;
+        const bestModel = getBestModel(results);
+        
+        if (bestModel) {
+          duration = bestModel.duration;
+          logger.info('buy.ts:POST', 'Multi-model execution completed', {
+            bestModel: bestModel.modelName,
+            bestDuration: bestModel.duration,
+            totalResults: results.length,
+            successfulCount: results.filter(r => r.success && !r.skipped).length
+          });
+        } else {
+          // اگر هیچ مدلی موفق نشد، از اولین مدل خطا استفاده می‌کنیم
+          duration = results[0]?.duration || 0;
+          throw new Error('همه مدل‌ها ناموفق بودند');
+        }
+      } else {
+        // اجرای تک مدل (رفتار قبلی)
+        switch (model) {
+          case '1':
+            duration = await executeFastBuy(page, order);
+            break;
+          case '4':
+            duration = await executeUltraBuy(page, order);
+            break;
+          case '5':
+            duration = await executeAPIBuy(page, order);
+            break;
+          case '6':
+            duration = await executeAPIUltraBuy(page, order);
+            break;
+          default:
+            duration = await executeUltraBuy(page, order); // Default to model 4
+        }
       }
       // #region agent log
       try {
@@ -452,7 +554,7 @@ router.post('/', async (req: Request, res: Response) => {
     } catch (e) {}
     // #endregion
     
-    res.json({
+    const response: any = {
       success: true,
       message: normalizedSide === 'sell' ? 'فروش با موفقیت انجام شد' : 'خرید با موفقیت انجام شد',
       duration,
@@ -463,7 +565,26 @@ router.post('/', async (req: Request, res: Response) => {
         side: normalizedSide
       },
       asset: assetData
-    });
+    };
+
+    // اگر multi-model execution انجام شده، نتایج را اضافه می‌کنیم
+    if (model === 'all' && multiModelResults) {
+      const bestModel = getBestModel(multiModelResults);
+      response.multiModel = {
+        results: multiModelResults,
+        bestModel: bestModel ? {
+          model: bestModel.model,
+          modelName: bestModel.modelName,
+          duration: bestModel.duration
+        } : null,
+        totalModels: multiModelResults.length,
+        successfulCount: multiModelResults.filter(r => r.success && !r.skipped).length,
+        failedCount: multiModelResults.filter(r => !r.success && !r.skipped).length,
+        skippedCount: multiModelResults.filter(r => r.skipped).length
+      };
+    }
+
+    res.json(response);
     
     // #region agent log
     try {

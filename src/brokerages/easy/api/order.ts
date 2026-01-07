@@ -6,6 +6,24 @@ import { PerformanceLogger } from '../logger';
 import { logger } from '../../../core/advancedLogger';
 import { Settings } from '../../../config/settings';
 
+// Cache برای symbolIsin (در memory)
+const symbolIsinCache: Map<string, string> = new Map();
+
+// بهینه‌سازی createDateTime format: استفاده از template string به جای toLocaleString (سریع‌تر)
+function formatCreateDateTime(): string {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const year = now.getFullYear();
+  let hour = now.getHours();
+  const minute = now.getMinutes().toString().padStart(2, '0');
+  const second = now.getSeconds().toString().padStart(2, '0');
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  hour = hour % 12 || 12;
+  
+  return `${month}/${day}/${year}, ${hour}:${minute}:${second} ${ampm}`;
+}
+
 /**
  * ثبت سفارش خرید یا فروش
  * 
@@ -31,8 +49,9 @@ export async function placeOrder(
   order: BuyOrder
 ): Promise<OrderResponse> {
   PerformanceLogger.start('PlaceOrder_Validation');
+  const validationStartTime = Date.now();
   
-  // Validation ورودی‌ها
+  // Validation ورودی‌ها (minimal validation - فقط ضروری‌ها)
   if (!order.symbol || order.symbol.trim() === '') {
     throw new APIError('نماد نمی‌تواند خالی باشد');
   }
@@ -57,27 +76,44 @@ export async function placeOrder(
     throw new APIError('تعداد باید عدد صحیح مثبت باشد');
   }
 
+  const validationDuration = Date.now() - validationStartTime;
+  logger.logAPIPhase('api-payload-validation', validationDuration, {});
   PerformanceLogger.end('PlaceOrder_Validation');
 
   PerformanceLogger.start('PlaceOrder_Prepare');
+  const prepareStartTime = Date.now();
   
   // تبدیل side به عدد (0 = خرید، 1 = فروش)
   const sideValue = order.side === 'sell' ? 1 : 0;
   
-  // استفاده از symbolHelper برای mapping
-  const symbolIsin = getIsinForSymbol(order.symbol);
+  // استفاده از symbolHelper برای mapping با cache
+  const symbolIsinStartTime = Date.now();
+  let symbolIsin: string;
   
-  // ساخت createDateTime
-  const now = new Date();
-  const createDateTime = now.toLocaleString('en-US', {
-    month: 'numeric',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true
-  });
+  if (symbolIsinCache.has(order.symbol)) {
+    symbolIsin = symbolIsinCache.get(order.symbol)!;
+    const symbolIsinDuration = Date.now() - symbolIsinStartTime;
+    logger.logAPIPhase('api-payload-symbol-isin-cached', symbolIsinDuration, {
+      cached: true,
+      symbol: order.symbol
+    });
+  } else {
+    symbolIsin = getIsinForSymbol(order.symbol);
+    symbolIsinCache.set(order.symbol, symbolIsin); // Cache کردن
+    const symbolIsinDuration = Date.now() - symbolIsinStartTime;
+    logger.logAPIPhase('api-payload-symbol-isin-cached', symbolIsinDuration, {
+      cached: false,
+      symbol: order.symbol
+    });
+  }
+  
+  // ساخت createDateTime (پیش‌محاسبه شده)
+  const dateFormatStartTime = Date.now();
+  const createDateTime = formatCreateDateTime();
+  const dateFormatDuration = Date.now() - dateFormatStartTime;
+  logger.logAPIPhase('api-payload-date-format', dateFormatDuration, {});
+  
+  const payloadConstructionStartTime = Date.now();
 
   // ساخت payload
   const payload = {
@@ -94,6 +130,13 @@ export async function placeOrder(
       orderFrom: 34
     }
   };
+
+  const payloadConstructionDuration = Date.now() - payloadConstructionStartTime;
+  const payloadSize = JSON.stringify(payload).length;
+  logger.logAPIPhase('api-payload-construction', payloadConstructionDuration, {
+    payloadSize,
+    symbol: order.symbol
+  });
 
   PerformanceLogger.end('PlaceOrder_Prepare');
 

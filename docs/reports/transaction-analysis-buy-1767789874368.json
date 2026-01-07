@@ -1,0 +1,262 @@
+{
+  "transaction": {
+    "orderId": "buy-1767789874368",
+    "timestamp": 1767789874368,
+    "model": "5",
+    "symbol": "زر",
+    "price": "681000",
+    "quantity": "2",
+    "side": "buy",
+    "duration": 1323,
+    "success": true
+  },
+  "timingBreakdown": {
+    "phases": [
+      {
+        "name": "Browser Launch + Page Navigation (Pre-transaction)",
+        "duration": 0,
+        "percentage": 0,
+        "startTime": 1767789850254,
+        "endTime": 1767789870788,
+        "logs": [
+          {
+            "timestamp": 1767789850254,
+            "level": "INFO",
+            "location": "buy.ts:POST",
+            "message": "Buy request received",
+            "data": {
+              "symbol": "زر",
+              "price": 681000,
+              "quantity": 2,
+              "model": "5",
+              "debug": false,
+              "side": "buy"
+            }
+          }
+        ],
+        "details": {
+          "browserLaunchDuration": 0,
+          "pageLoadDuration": 0,
+          "waitDuration": 15000,
+          "actualDuration": 20534,
+          "note": "This phase occurs before transaction timestamp, so duration is not counted in transaction breakdown"
+        }
+      },
+      {
+        "name": "Balance Reading (Before)",
+        "duration": 0,
+        "percentage": 0,
+        "startTime": 1767789870788,
+        "endTime": 1767789870788,
+        "logs": [
+          {
+            "timestamp": 1767789870788,
+            "level": "INFO",
+            "location": "buyAction.ts:getCashBalance",
+            "message": "Balance extracted successfully",
+            "data": {
+              "balance": 14987017
+            }
+          },
+          {
+            "timestamp": 1767789870788,
+            "level": "INFO",
+            "location": "buyAction.ts:getCashBalance",
+            "message": "Balance extracted successfully",
+            "data": {
+              "balance": 14987017
+            }
+          }
+        ],
+        "details": {
+          "balance": 14987017
+        }
+      },
+      {
+        "name": "Buy Process (Selection + Panel + Fill + Submit)",
+        "duration": 1326,
+        "percentage": 100.2267573696145,
+        "startTime": 1767789873042,
+        "endTime": 1767789874368,
+        "logs": [
+          {
+            "timestamp": 1767789873042,
+            "level": "INFO",
+            "location": "buyAction.ts:executeFastBuy",
+            "message": "Starting buy process",
+            "data": {
+              "model": 1,
+              "order": {
+                "symbol": "زر",
+                "price": "681000",
+                "quantity": "2",
+                "side": "buy"
+              }
+            }
+          }
+        ],
+        "details": {
+          "startMessage": "Starting buy process",
+          "endMessage": "Transaction end",
+          "orderCreated": 1767789870815
+        }
+      },
+      {
+        "name": "Post-processing (Overhead)",
+        "duration": 0,
+        "percentage": 0,
+        "startTime": 1767789876380,
+        "endTime": 1767789876519,
+        "logs": [
+          {
+            "timestamp": 1767789876519,
+            "level": "INFO",
+            "location": "buy.ts:POST",
+            "message": "Buy completed successfully",
+            "data": {
+              "order": {
+                "symbol": "زر",
+                "price": "681000",
+                "quantity": "2",
+                "side": "buy"
+              },
+              "duration": 3540,
+              "model": "5",
+              "assetData": {
+                "balanceBefore": 14987017,
+                "balanceAfter": 13623383,
+                "change": -1363634,
+                "changeType": "decreased",
+                "validation": {
+                  "isValid": true,
+                  "message": "خرید انجام شد ولی مقدار کسر شده با سفارش تطابق ندارد",
+                  "severity": "warning"
+                }
+              }
+            }
+          }
+        ],
+        "details": {
+          "order": {
+            "symbol": "زر",
+            "price": "681000",
+            "quantity": "2",
+            "side": "buy"
+          },
+          "duration": 3540,
+          "model": "5",
+          "assetData": {
+            "balanceBefore": 14987017,
+            "balanceAfter": 13623383,
+            "change": -1363634,
+            "changeType": "decreased",
+            "validation": {
+              "isValid": true,
+              "message": "خرید انجام شد ولی مقدار کسر شده با سفارش تطابق ندارد",
+              "severity": "warning"
+            }
+          },
+          "actualDuration": 139,
+          "note": "This phase occurs after transaction duration and is not counted in breakdown"
+        }
+      }
+    ],
+    "totalDuration": 1323,
+    "overheadDuration": -3,
+    "overheadPercentage": -0.22675736961451248,
+    "unaccountedTime": -3,
+    "unaccountedPercentage": -0.22675736961451248
+  },
+  "bottlenecks": [
+    {
+      "phase": "Buy Process (Selection + Panel + Fill + Submit)",
+      "duration": 1326,
+      "percentage": 100.2267573696145,
+      "severity": "high",
+      "recommendation": "Migration به Model 5 یا 6",
+      "expectedImprovement": "کاهش 95%+ با migration به API"
+    }
+  ],
+  "suggestions": [
+    {
+      "type": "model-migration",
+      "priority": "high",
+      "title": "Migration به Model 5 (API Direct)",
+      "description": "Buy Process با Model 4 کند است. استفاده از Model 5 (API) می‌تواند زمان را به 50-100ms کاهش دهد.",
+      "expectedImprovement": "1260ms (95%)",
+      "implementation": "استفاده از Model 5 در dashboard: `model: \"5\"`",
+      "impact": {
+        "timeSaved": 1260,
+        "percentageSaved": 95
+      }
+    },
+    {
+      "type": "model-migration",
+      "priority": "medium",
+      "title": "Migration به Model 6 (Ultra Fast)",
+      "description": "Model 6 برای سرعت حداکثری طراحی شده است (target: <50ms)",
+      "expectedImprovement": "1273ms (96%)",
+      "implementation": "استفاده از Model 6 در dashboard: `model: \"6\"`",
+      "impact": {
+        "timeSaved": 1273,
+        "percentageSaved": 96
+      }
+    }
+  ],
+  "modelComparison": {
+    "currentModel": "5",
+    "currentDuration": 1323,
+    "alternatives": [
+      {
+        "model": 5,
+        "modelName": "Model 5 (API Direct)",
+        "estimatedDuration": 50,
+        "improvement": 1273,
+        "improvementPercentage": 96,
+        "pros": [
+          "API-based (بدون UI automation)",
+          "سرعت بالا (50-100ms پس از بهینه‌سازی)",
+          "قابلیت skip verification",
+          "Token caching برای سرعت بیشتر"
+        ],
+        "cons": [
+          "نیاز به token extraction",
+          "وابستگی به API stability"
+        ],
+        "migrationComplexity": "low"
+      },
+      {
+        "model": 6,
+        "modelName": "Model 6 (Ultra Fast)",
+        "estimatedDuration": 50,
+        "improvement": 1273,
+        "improvementPercentage": 96,
+        "pros": [
+          "سریع‌ترین model (<50ms)",
+          "بدون verification",
+          "بدون retry overhead",
+          "بهینه شده برای سرعت حداکثری"
+        ],
+        "cons": [
+          "بدون retry (در صورت خطا)",
+          "بدون verification (نیاز به اطمینان از موفقیت)"
+        ],
+        "migrationComplexity": "medium"
+      }
+    ]
+  },
+  "summary": {
+    "totalDuration": 1323,
+    "benchmarkComparison": {
+      "model4Benchmark": 200,
+      "model5Benchmark": 364,
+      "model6Target": 50,
+      "vsModel4": 1123,
+      "vsModel5": 959,
+      "vsModel6": 1273
+    },
+    "keyFindings": [
+      "1 bottleneck اصلی شناسایی شد: Buy Process (Selection + Panel + Fill + Submit)"
+    ]
+  }
+}

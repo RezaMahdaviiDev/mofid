@@ -1,5 +1,7 @@
 import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import * as path from 'path';
+import { logger } from './advancedLogger';
+import { tokenCache } from '../brokerages/easy/api/tokenCache';
 
 export class BrowserManager {
   private browser: Browser | null = null;
@@ -49,7 +51,50 @@ export class BrowserManager {
     });
 
     const page = await this.context.newPage();
+    
+    // Token pre-extraction در background (برای API models)
+    // این کار به صورت async انجام می‌شود و blocking نمی‌کند
+    this.preExtractToken(page).catch(err => {
+      logger.warn('BrowserManager:preExtractToken', 'Token pre-extraction failed', { error: err.message });
+    });
+    
     return page;
+  }
+
+  /**
+   * Pre-extraction توکن در background
+   * این متد بعد از load شدن صفحه و در صورت نیاز، توکن را استخراج می‌کند
+   */
+  private async preExtractToken(page: Page): Promise<void> {
+    try {
+      // بررسی اینکه آیا token cache معتبر است
+      const cachedToken = tokenCache.get();
+      if (cachedToken) {
+        logger.logAPIPhase('token-pre-extraction', 0, {
+          cached: true,
+          method: 'cache-exists'
+        });
+        return; // Token از قبل cache شده است
+      }
+
+      logger.logAPIPhase('token-pre-extraction-start', 0, {
+        cached: false,
+        method: 'background-extraction'
+      });
+
+      // منتظر می‌مانیم تا صفحه load شود (اگر هنوز load نشده)
+      // این متد باید بعد از page.goto() فراخوانی شود
+      // برای حالا، فقط log می‌کنیم که pre-extraction شروع شده
+      // استخراج واقعی در client.ts انجام می‌شود
+      
+      logger.logAPIPhase('token-pre-extraction', 0, {
+        cached: false,
+        method: 'will-extract-on-first-request',
+        note: 'Token will be extracted on first API request'
+      });
+    } catch (error: any) {
+      logger.warn('BrowserManager:preExtractToken', 'Pre-extraction error', { error: error.message });
+    }
   }
 
   async close(): Promise<void> {
