@@ -5,6 +5,8 @@
 **آخرین به‌روزرسانی**: 2025-01-08  
 **وضعیت**: در حال بحث و تکمیل
 
+> ⭐ **نکته مهم**: قبل از مطالعه این فایل، حتماً [راهنمای استراتژیک و فلسفه پروژه](../development/strategy.md) را مطالعه کنید. این راهنما تصمیمات کلیدی و جهت‌گیری پروژه را مشخص می‌کند.
+
 ---
 
 ## 📋 فهرست مطالب
@@ -13,6 +15,10 @@
 - [بهینه‌سازی API](#2-بهینه‌سازی-api)
 - [زیرمدل‌های Model 5 (API Direct)](#21-زیرمدل‌های-model-5-api-direct)
 - [استراتژی تست جامع](#22-استراتژی-تست-جامع-comprehensive-testing-strategy)
+- [طرح‌های توسعه‌ای](#23-طرح‌های-توسعه‌ای-development-plans)
+  - [طرح 1: ادغام APIهای Order Management](#طرح-1-ادغام-apiهای-order-management-در-dashboard)
+  - [طرح 2: ساخت دیتابیس جامع](#طرح-2-ساخت-دیتابیس-جامع-برای-پروژه)
+  - [طرح 3: Network Traffic Capture و تحلیل](#طرح-3-network-traffic-capture-و-تحلیل-har)
 - [مسائل فنی](#3-مسائل-فنی)
 - [بهبودهای آینده](#4-بهبودهای-آینده)
 - [سوالات باز](#5-سوالات-باز-open-questions)
@@ -914,6 +920,796 @@ async function runACET(config: ACETConfig): Promise<ACETResult> {
 
 ---
 
+## 2.3. طرح‌های توسعه‌ای (Development Plans)
+
+### طرح 1: ادغام APIهای Order Management در Dashboard
+
+#### وضعیت فعلی
+- ✅ **APIها پیاده‌سازی شده**:
+  - `getOrders()` - دریافت لیست سفارشات
+  - `getQueuePosition()` - دریافت جایگاه در صف
+  - `monitorOrder()` - مانیتورینگ جایگاه با interval
+- ⏳ **Dashboard Integration**: در حال توسعه
+- ⏳ **Logging Enhancement**: نیاز به بهبود
+
+#### هدف
+اضافه کردن قابلیت‌های مدیریت سفارشات به Dashboard و بهبود لاگ‌گیری
+
+#### فازبندی
+
+##### فاز 1: Backend Routes (1 هفته)
+- [ ] ایجاد route `/api/orders` برای دریافت لیست سفارشات
+- [ ] ایجاد route `/api/orders/:orderId/position` برای جایگاه در صف
+- [ ] ایجاد route `/api/orders/:orderId/monitor` برای مانیتورینگ (WebSocket یا polling)
+- [ ] تست routes
+
+##### فاز 2: Frontend Dashboard (1 هفته)
+- [ ] افزودن بخش "مدیریت سفارشات" به Dashboard
+- [ ] نمایش لیست سفارشات فعال
+- [ ] نمایش جایگاه در صف برای هر سفارش
+- [ ] نمایش مانیتورینگ real-time (آپدیت خودکار)
+- [ ] UI برای شروع/توقف مانیتورینگ
+
+##### فاز 3: لاگ‌گیری پیشرفته (1 هفته)
+- [ ] لاگ‌گیری برای `getOrders()` - ذخیره لیست سفارشات
+- [ ] لاگ‌گیری برای `getQueuePosition()` - ذخیره تغییرات جایگاه
+- [ ] لاگ‌گیری برای `monitorOrder()` - ذخیره timeline مانیتورینگ
+- [ ] ایجاد گزارش‌های تحلیلی از مانیتورینگ
+
+#### ساختار پیشنهادی
+
+##### Backend Routes
+```typescript
+// src/dashboard/routes/orders.ts
+
+router.get('/', async (req, res) => {
+  // دریافت لیست سفارشات
+  const client = new EasyTraderAPIClient(page);
+  const orders = await getOrders(client);
+  // لاگ‌گیری
+  logger.info('orders.ts:getAll', 'Orders list retrieved', {
+    count: orders.orders.length
+  });
+  res.json({ success: true, orders: orders.orders });
+});
+
+router.get('/:orderId/position', async (req, res) => {
+  // دریافت جایگاه در صف
+  const { orderId } = req.params;
+  const position = await getQueuePosition(client, orderId);
+  // لاگ‌گیری
+  logger.info('orders.ts:getPosition', 'Queue position retrieved', {
+    orderId,
+    position: position.orderPlaces[0]
+  });
+  res.json({ success: true, position: position.orderPlaces[0] });
+});
+
+router.post('/:orderId/monitor', async (req, res) => {
+  // شروع مانیتورینگ
+  const { orderId } = req.params;
+  const { interval = 5000 } = req.body;
+  // WebSocket یا Server-Sent Events
+});
+```
+
+##### Frontend Dashboard
+```javascript
+// بخش جدید در Dashboard:
+// 1. تب یا بخش "مدیریت سفارشات"
+// 2. جدول لیست سفارشات با:
+//    - Order ID
+//    - Symbol
+//    - Price
+//    - Quantity
+//    - Status
+//    - Queue Position (با آپدیت خودکار)
+//    - Actions (Monitor, Cancel, etc.)
+```
+
+##### لاگ‌گیری
+```typescript
+// در advancedLogger.ts:
+logger.logOrderList(orders); // ذخیره لیست سفارشات
+logger.logQueuePosition(orderId, position); // ذخیره جایگاه
+logger.logMonitoring(orderId, timeline); // ذخیره timeline مانیتورینگ
+```
+
+---
+
+### طرح 2: ساخت دیتابیس جامع برای پروژه
+
+#### وضعیت فعلی
+- ⏳ **هیچ دیتابیسی وجود ندارد**
+- ✅ File-based storage (JSON files در `logs/`)
+- ⚠️ محدودیت‌ها:
+  - جستجو کند
+  - Query پیچیده غیرممکن
+  - Analytics محدود
+  - Performance پایین برای داده‌های زیاد
+
+#### هدف
+ایجاد دیتابیس جامع برای ذخیره‌سازی، تحلیل و گزارش‌گیری از داده‌های پروژه
+
+#### بررسی گزینه‌ها
+
+##### گزینه 1: SQLite (پیشنهادی برای شروع)
+**مزایا**:
+- ✅ ساده و سبک (فایل-based)
+- ✅ بدون نیاز به server جداگانه
+- ✅ مناسب برای پروژه‌های کوچک-متوسط
+- ✅ پشتیبانی کامل از SQL
+
+**معایب**:
+- ⚠️ محدودیت concurrent writes
+- ⚠️ Performance پایین‌تر برای داده‌های خیلی زیاد
+
+##### گزینه 2: PostgreSQL
+**مزایا**:
+- ✅ Performance بالا
+- ✅ پشتیبانی کامل از concurrent access
+- ✅ مناسب برای production
+
+**معایب**:
+- ⚠️ نیاز به setup server
+- ⚠️ پیچیده‌تر برای شروع
+
+##### گزینه 3: MongoDB
+**مزایا**:
+- ✅ Flexible schema
+- ✅ مناسب برای داده‌های JSON-like
+
+**معایب**:
+- ⚠️ نیاز به server
+- ⚠️ کمتر مناسب برای relational data
+
+#### تصمیم اولیه: SQLite (برای شروع)
+
+**دلیل**: 
+- مناسب برای پروژه فعلی
+- ساده برای پیاده‌سازی
+- می‌توانیم بعداً به PostgreSQL migrate کنیم
+
+#### ساختار پیشنهادی Database Schema
+
+```sql
+-- جدول سفارشات (Orders)
+CREATE TABLE orders (
+    id TEXT PRIMARY KEY,
+    order_id TEXT UNIQUE NOT NULL, -- Order ID از API
+    symbol TEXT NOT NULL,
+    symbol_isin TEXT,
+    price INTEGER NOT NULL,
+    quantity INTEGER NOT NULL,
+    side TEXT NOT NULL, -- 'buy' or 'sell'
+    model TEXT, -- '1', '4', '5', '6', etc.
+    status TEXT, -- 'pending', 'placed', 'executed', 'cancelled'
+    order_state_str TEXT, -- از API
+    executed_quantity INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    executed_at TIMESTAMP,
+    duration_ms INTEGER, -- زمان اجرا
+    user_id TEXT, -- برای future multi-user support
+    INDEX idx_symbol (symbol),
+    INDEX idx_created_at (created_at),
+    INDEX idx_status (status)
+);
+
+-- جدول جایگاه در صف (Queue Positions)
+CREATE TABLE queue_positions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id TEXT NOT NULL,
+    position INTEGER NOT NULL, -- جایگاه در صف
+    volume_ahead INTEGER, -- حجم جلوتر
+    checked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    INDEX idx_order_id (order_id),
+    INDEX idx_checked_at (checked_at)
+);
+
+-- جدول لاگ‌ها (Logs)
+CREATE TABLE logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    level TEXT NOT NULL, -- 'INFO', 'WARN', 'ERROR', 'DEBUG'
+    location TEXT,
+    message TEXT NOT NULL,
+    data TEXT, -- JSON
+    error TEXT, -- JSON
+    performance TEXT, -- JSON
+    log_type TEXT, -- 'buy', 'api', 'performance', etc.
+    INDEX idx_timestamp (timestamp),
+    INDEX idx_level (level),
+    INDEX idx_log_type (log_type)
+);
+
+-- جدول Performance Metrics
+CREATE TABLE performance_metrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    operation TEXT NOT NULL,
+    duration_ms INTEGER NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    model TEXT,
+    success BOOLEAN,
+    metadata TEXT, -- JSON
+    INDEX idx_operation (operation),
+    INDEX idx_timestamp (timestamp),
+    INDEX idx_model (model)
+);
+
+-- جدول Asset Tracking (موجودی)
+CREATE TABLE asset_changes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id TEXT,
+    balance_before INTEGER,
+    balance_after INTEGER,
+    change_amount INTEGER,
+    change_type TEXT, -- 'increased', 'decreased', 'unchanged'
+    validated BOOLEAN DEFAULT FALSE,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    INDEX idx_timestamp (timestamp),
+    INDEX idx_order_id (order_id)
+);
+
+-- جدول Token Cache (برای tracking)
+CREATE TABLE token_cache_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cached_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP,
+    was_valid BOOLEAN,
+    INDEX idx_expires_at (expires_at)
+);
+```
+
+#### فازبندی پیاده‌سازی
+
+##### فاز 1: Setup و Infrastructure (1 هفته)
+- [ ] انتخاب و نصب library (better-sqlite3 یا sql.js)
+- [ ] ایجاد Database Manager class
+- [ ] پیاده‌سازی Schema creation/migration
+- [ ] تست‌های اولیه
+
+##### فاز 2: Migration از File-based (1 هفته)
+- [ ] Migration script برای لاگ‌های موجود
+- [ ] Migration script برای orders موجود
+- [ ] تست migration
+- [ ] Backup strategy
+
+##### فاز 3: Integration با Logger (1 هفته)
+- [ ] تغییر AdvancedLogger برای استفاده از DB
+- [ ] نگه داشتن file-based به عنوان backup
+- [ ] تست performance
+
+##### فاز 4: Query Interface و Analytics (1-2 هفته)
+- [ ] ایجاد Query Builder
+- [ ] Dashboard برای نمایش Analytics
+- [ ] Reports generation
+- [ ] Export به CSV/JSON
+
+#### مزایای دیتابیس
+
+**قبل (File-based)**:
+- ❌ جستجو: باید همه فایل‌ها را بخواند
+- ❌ Analytics: غیرممکن یا خیلی کند
+- ❌ Query پیچیده: غیرممکن
+
+**بعد (Database)**:
+- ✅ جستجو: سریع با INDEX
+- ✅ Analytics: Query‌های پیچیده
+- ✅ Reports: آسان
+- ✅ Performance: بهتر
+
+#### مثال Query‌های مفید
+
+```sql
+-- متوسط سرعت هر مدل در هفته گذشته
+SELECT model, AVG(duration_ms) as avg_duration
+FROM orders
+WHERE created_at > datetime('now', '-7 days')
+GROUP BY model;
+
+-- نرخ موفقیت API
+SELECT 
+    COUNT(*) as total,
+    SUM(CASE WHEN status = 'executed' THEN 1 ELSE 0 END) as successful,
+    (SUM(CASE WHEN status = 'executed' THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) as success_rate
+FROM orders
+WHERE model IN ('5', '6');
+
+-- تغییرات جایگاه در صف برای یک سفارش
+SELECT position, volume_ahead, checked_at
+FROM queue_positions
+WHERE order_id = ?
+ORDER BY checked_at;
+
+-- Performance degradation در طول زمان
+SELECT 
+    DATE(created_at) as date,
+    AVG(duration_ms) as avg_duration,
+    COUNT(*) as order_count
+FROM orders
+WHERE created_at > datetime('now', '-30 days')
+GROUP BY DATE(created_at)
+ORDER BY date;
+```
+
+---
+
+### Action Items
+
+#### طرح 1: Dashboard Integration
+##### این هفته
+- [ ] طراحی دقیق UI برای بخش مدیریت سفارشات
+- [ ] طراحی API routes
+- [ ] تحلیل HAR موجود (`docs/archive/d.easytrader.ir.har`)
+
+##### این ماه
+- [ ] پیاده‌سازی Backend Routes (`/api/orders`)
+- [ ] پیاده‌سازی Frontend Dashboard
+- [ ] بهبود لاگ‌گیری برای Order Management
+
+#### طرح 2: Database
+##### این هفته
+- [ ] تصمیم نهایی درباره SQLite vs PostgreSQL
+- [ ] طراحی دقیق Schema (review و optimize)
+- [ ] انتخاب library (better-sqlite3 پیشنهادی)
+
+##### این ماه
+- [ ] Setup Database Infrastructure
+- [ ] پیاده‌سازی Database Manager class
+- [ ] Migration از File-based به Database
+- [ ] Integration با AdvancedLogger
+- [ ] تحلیل HAR موجود (`docs/archive/d.easytrader.ir.har`)
+
+##### آینده (1-2 ماه)
+- [ ] Query Interface و Builder
+- [ ] Analytics Dashboard
+- [ ] Reports Generation
+- [ ] Export functionality
+
+---
+
+### طرح 3: Network Traffic Capture و تحلیل (HAR)
+
+#### سوال اصلی
+**آیا می‌توانیم تمام ترافیک شبکه را با Playwright ذخیره و تحلیل کنیم یا بهتر است به صورت دستی با HAR انجام دهیم؟**
+
+#### پاسخ: ترکیب هر دو روش ✅
+
+- **Manual HAR**: برای تحلیل اولیه و اکتشاف
+- **Automated HAR Capture**: برای continuous monitoring و automation
+
+#### وضعیت فعلی
+- ✅ **Playwright**: استفاده می‌شود برای browser automation
+- ✅ **Route Interception**: برای token extraction (محدود)
+- ⏳ **HAR Capture**: پیاده‌سازی نشده
+- ✅ **Manual HAR**: یک نمونه در `docs/archive/d.easytrader.ir.har` موجود است (>2MB)
+
+#### مقایسه رویکردها
+
+| ویژگی | Playwright (Automated) | Manual (Browser DevTools) |
+|-------|------------------------|---------------------------|
+| Automation | ✅ کاملاً خودکار | ❌ دستی |
+| Continuous | ✅ می‌تواند همیشه active باشد | ❌ فقط در صورت نیاز |
+| Selective | ✅ فیلتر URL/type ممکن است | ⚠️ محدود |
+| Content | ✅ می‌تواند content را ذخیره کند | ✅ می‌تواند content را ذخیره کند |
+| Analysis | ⚠️ نیاز به parser | ✅ می‌تواند در HAR Viewer باز شود |
+| Debugging | ✅ لاگ‌گیری برنامه‌نویسی | ✅ دسترسی مستقیم در مرورگر |
+| Performance | ⚠️ کمی overhead دارد | ✅ بدون overhead |
+
+#### استفاده‌های مفید
+
+**از تحلیل Network Traffic می‌توانیم بفهمیم**:
+1. ✅ API endpoints جدید
+2. ✅ Headers و authentication tokens
+3. ✅ Request/Response patterns
+4. ✅ Performance bottlenecks
+5. ✅ Error patterns
+6. ✅ API rate limits (از response headers)
+7. ✅ Cache strategies
+8. ✅ WebSocket connections (اگر وجود دارد)
+
+---
+
+#### پیاده‌سازی پیشنهادی
+
+##### گزینه A: HAR Capture با Playwright (Automated) ⭐ پیشنهادی
+
+**مزایا**:
+- خودکار در هر execution
+- قابل برنامه‌نویسی
+- می‌تواند فیلتر کند (فقط API calls)
+- ذخیره در Database برای تحلیل
+
+**پیاده‌سازی**:
+```typescript
+// src/utils/harCapture.ts
+
+import { BrowserContext, Page } from 'playwright';
+import * as path from 'path';
+import * as fs from 'fs';
+import { logger } from '../core/advancedLogger';
+
+export class HARCapture {
+  private context: BrowserContext;
+  private harPath: string | null = null;
+  private enabled: boolean = false;
+
+  constructor(context: BrowserContext, outputDir: string = 'logs/har') {
+    this.context = context;
+    
+    // ایجاد دایرکتوری
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+  }
+
+  /**
+   * شروع HAR capture
+   * @param options - تنظیمات capture
+   */
+  async start(options: {
+    path?: string;
+    urlFilter?: string | RegExp;
+    mode?: 'full' | 'minimal';
+  } = {}): Promise<string> {
+    const {
+      path: customPath,
+      urlFilter = /api-mts\.orbis\.easytrader\.ir/,
+      mode = 'full'
+    } = options;
+
+    if (!customPath) {
+      this.harPath = path.join('logs/har', `network-${Date.now()}.har`);
+    } else {
+      this.harPath = customPath;
+    }
+
+    // استفاده از recordHar option در newContext
+    // این باید در browser.ts هنگام newContext تنظیم شود
+    
+    this.enabled = true;
+    
+    logger.info('HARCapture:start', 'HAR capture started', {
+      harPath: this.harPath,
+      mode,
+      urlFilter: urlFilter.toString()
+    });
+
+    return this.harPath;
+  }
+
+  /**
+   * توقف HAR capture و دریافت فایل
+   */
+  async stop(): Promise<string | null> {
+    if (!this.enabled || !this.harPath) {
+      return null;
+    }
+
+    // دریافت HAR از context
+    // در Playwright، HAR به صورت خودکار در context.close() ذخیره می‌شود
+    
+    this.enabled = false;
+    
+    const fileSize = fs.existsSync(this.harPath) ? fs.statSync(this.harPath).size : 0;
+    
+    logger.info('HARCapture:stop', 'HAR capture stopped', {
+      harPath: this.harPath,
+      fileSize
+    });
+
+    return this.harPath;
+  }
+
+  /**
+   * دریافت HAR path
+   */
+  getPath(): string | null {
+    return this.harPath;
+  }
+}
+```
+
+**Integration با BrowserManager**:
+```typescript
+// در browser.ts:
+import { HARCapture } from '../utils/harCapture';
+
+export class BrowserManager {
+  private harCapture: HARCapture | null = null;
+
+  async launch(headless: boolean = true, enableHar: boolean = false): Promise<Page> {
+    // ... existing code ...
+    
+    this.context = await this.browser.newContext({
+      // ... existing options ...
+      recordHar: enableHar ? {
+        path: `logs/har/session-${Date.now()}.har`,
+        url: /api-mts\.orbis\.easytrader\.ir/, // فقط API calls
+        mode: 'full' // یا 'minimal' برای کوچک‌تر شدن
+      } : undefined
+    });
+
+    // یا استفاده از HARCapture class برای کنترل بیشتر
+    if (enableHar) {
+      this.harCapture = new HARCapture(this.context);
+      await this.harCapture.start({
+        urlFilter: /api-mts\.orbis\.easytrader\.ir/,
+        mode: 'full'
+      });
+    }
+    
+    // ...
+  }
+
+  async close(): Promise<void> {
+    // Stop HAR capture
+    if (this.harCapture) {
+      const harPath = await this.harCapture.stop();
+      console.log(`📦 HAR file saved: ${harPath}`);
+    }
+    
+    // ... existing close code ...
+    // HAR به صورت خودکار در context.close() ذخیره می‌شود
+  }
+}
+```
+
+---
+
+##### گزینه B: HAR Analyzer (برای تحلیل Manual HAR)
+
+**مزایا**:
+- تحلیل HAR files موجود
+- Extract API endpoints
+- پیدا کردن patterns
+- پیشنهاد بهینه‌سازی‌ها
+
+**پیاده‌سازی**:
+```typescript
+// src/utils/harAnalyzer.ts
+
+interface HAREntry {
+  request: {
+    url: string;
+    method: string;
+    headers: Array<{ name: string; value: string }>;
+    postData?: { text: string };
+  };
+  response: {
+    status: number;
+    headers: Array<{ name: string; value: string }>;
+    content: { text?: string };
+  };
+  timings: {
+    blocked?: number;
+    dns?: number;
+    connect?: number;
+    send?: number;
+    wait?: number;
+    receive?: number;
+  };
+}
+
+export class HARAnalyzer {
+  /**
+   * Parse HAR file و extract اطلاعات مفید
+   */
+  parse(harPath: string): {
+    apiEndpoints: Array<{ url: string; method: string; count: number }>;
+    tokens: string[];
+    newEndpoints: string[];
+    performanceMetrics: any;
+    suggestions: string[];
+  } {
+    // Parse HAR
+    // Extract API endpoints
+    // Find tokens
+    // Analyze performance
+    // Generate suggestions
+  }
+
+  /**
+   * پیدا کردن API endpoints جدید
+   */
+  findNewEndpoints(harPath: string, knownEndpoints: string[]): string[] {
+    // Compare with known endpoints
+    // Return new ones
+  }
+
+  /**
+   * Extract authentication tokens
+   */
+  extractTokens(harPath: string): Array<{ type: string; value: string; from: string }> {
+    // Extract Authorization headers
+    // Extract cookies
+    // Extract other auth tokens
+  }
+
+  /**
+   * تحلیل Performance
+   */
+  analyzePerformance(harPath: string): {
+    slowestRequests: Array<{ url: string; duration: number }>;
+    averageLatency: number;
+    bottlenecks: string[];
+  } {
+    // Analyze timings
+    // Find slow requests
+    // Identify bottlenecks
+  }
+}
+```
+
+---
+
+#### فازبندی پیاده‌سازی
+
+##### فاز 1: Manual HAR (فوری - الان)
+- [x] استفاده از DevTools برای capture HAR
+- [x] یک HAR file در `docs/archive/` موجود است
+- [ ] تحلیل در HAR Viewer
+- [ ] پیدا کردن API endpoints جدید
+- [ ] Extract tokens و headers
+- [ ] مستندسازی یافته‌ها
+
+##### فاز 2: HAR Analyzer (1 هفته)
+- [ ] پیاده‌سازی `HARAnalyzer` class
+- [ ] Parse HAR files
+- [ ] Extract API endpoints
+- [ ] Extract tokens
+- [ ] Performance analysis
+- [ ] Generate suggestions
+
+##### فاز 3: Automated HAR Capture (1-2 هفته)
+- [ ] پیاده‌سازی `HARCapture` class
+- [ ] Integration با BrowserManager
+- [ ] Selective capture (فقط API calls)
+- [ ] ذخیره در `logs/har/`
+- [ ] Auto-analysis پس از capture
+
+##### فاز 4: Integration با Database (1 هفته)
+- [ ] ذخیره network traffic در database
+- [ ] Query interface برای network data
+- [ ] Dashboard برای نمایش network traffic
+- [ ] Auto-discovery برای API endpoints جدید
+
+---
+
+#### ساختار پیشنهادی
+
+```
+src/utils/
+├── harCapture.ts        # Automated HAR capture
+├── harAnalyzer.ts       # HAR file analysis
+└── networkMonitor.ts    # Real-time network monitoring (آینده)
+
+logs/
+└── har/
+    ├── session-1234567890.har
+    ├── session-1234567891.har
+    └── analysis/
+        └── endpoints-discovered.json
+
+docs/
+└── network/
+    ├── discovered-endpoints.md
+    ├── api-patterns.md
+    └── performance-analysis.md
+```
+
+---
+
+#### سوالات باز
+
+##### درباره HAR Capture
+- [ ] آیا HAR capture را همیشه فعال کنیم یا فقط در debug mode؟
+- [ ] چه فیلترهایی اعمال کنیم؟ (فقط API calls? همه requests?)
+- [ ] آیا نیاز به content capture داریم؟ (باعث بزرگ شدن فایل می‌شود)
+- [ ] Storage strategy چیست؟ (چقدر نگه داریم؟ compression?)
+
+##### درباره Analysis
+- [ ] چه metrics از network traffic استخراج کنیم？
+- [ ] آیا نیاز به real-time monitoring داریم؟
+- [ ] چطور API endpoints جدید را detect کنیم؟
+- [ ] آیا نیاز به auto-update API spec داریم؟
+
+##### درباره Performance
+- [ ] HAR capture چه overhead دارد؟
+- [ ] آیا باید selective capture کنیم؟ (فقط API)
+- [ ] آیا نیاز به compression داریم؟
+
+---
+
+#### Action Items
+
+##### این هفته
+- [ ] تحلیل HAR موجود (`docs/archive/d.easytrader.ir.har`)
+- [ ] پیدا کردن API endpoints جدید
+- [ ] Extract tokens و headers
+- [ ] مستندسازی یافته‌ها
+
+##### این ماه
+- [ ] پیاده‌سازی HAR Analyzer
+- [ ] پیاده‌سازی HAR Capture (Automated)
+- [ ] Integration با BrowserManager
+- [ ] تست و validation
+
+##### آینده (1-2 ماه)
+- [ ] Integration با Database
+- [ ] Dashboard برای network monitoring
+- [ ] Auto-discovery برای API endpoints
+- [ ] Performance analysis automation
+
+---
+
+#### نکات مهم
+
+#### ⚠️ ملاحظات
+- HAR files می‌توانند خیلی بزرگ شوند (خصوصاً با content) - فایل موجود >2MB است
+- باید selective capture کنیم (فقط API calls) - استفاده از `url` filter
+- نیاز به cleanup strategy داریم (پاک کردن فایل‌های قدیمی)
+- Performance overhead قابل توجه نیست اما باید monitor کنیم
+
+#### ✅ مزایای کلیدی
+- **کشف APIهای جدید**: پیدا کردن endpoints جدید که ممکن است سریع‌تر یا بهتر باشند
+- **بهینه‌سازی**: تحلیل performance و bottlenecks در network layer
+- **Debugging**: فهمیدن مشکلات network که در لاگ‌های عادی دیده نمی‌شوند
+- **Security**: بررسی tokens و authentication patterns
+- **Documentation**: Auto-generate API documentation از network traffic
+
+#### 📊 مثال استفاده
+
+```
+1. Manual HAR capture (DevTools):
+   - پیدا کردن API endpoint جدید: /api/v3/order (جدید!)
+   - Extract token pattern جدید
+   - تحلیل response structure
+   - پیدا کردن rate limit headers
+
+2. Automated HAR Capture:
+   - در هر execution، HAR ذخیره می‌شود
+   - Auto-analysis پیدا می‌کند که endpoint جدید وجود دارد
+   - Alert یا notification
+   - ذخیره در database برای tracking
+
+3. HAR Analyzer:
+   - Parse همه HAR files
+   - Extract همه endpoints
+   - Generate API spec automatically
+   - Compare با spec موجود
+   - پیشنهاد updates
+```
+
+---
+
+### سوالات باز
+
+#### درباره Dashboard Integration
+- [ ] آیا از WebSocket استفاده کنیم یا polling؟ (WebSocket بهتر است اما پیچیده‌تر)
+- [ ] چند بار باید جایگاه در صف را آپدیت کنیم؟ (هر 5 ثانیه؟ 10 ثانیه؟)
+- [ ] آیا نیاز به cancel order داریم؟ (API ایزی‌تریدر از cancel پشتیبانی می‌کند؟)
+- [ ] آیا نیاز به modify order داریم؟ (تغییر قیمت/تعداد)
+
+#### درباره Database
+- [ ] SQLite کافی است یا از اول PostgreSQL استفاده کنیم؟
+- [ ] آیا نیاز به encryption داریم برای sensitive data؟ (order history, token cache)
+- [ ] Backup strategy چیست؟ (automatic backup? daily? weekly?)
+- [ ] آیا نیاز به migration path داریم از SQLite به PostgreSQL در آینده؟
+- [ ] آیا نیاز به database replication داریم؟ (برای high availability)
+
+#### درباره HAR Capture
+- [ ] آیا HAR capture را همیشه فعال کنیم یا فقط در debug mode؟
+- [ ] چه فیلترهایی اعمال کنیم؟ (فقط API calls? همه requests?)
+- [ ] آیا نیاز به content capture داریم؟ (باعث بزرگ شدن فایل می‌شود)
+- [ ] Storage strategy چیست؟ (چقدر نگه داریم؟ compression?)
+- [ ] HAR capture چه overhead دارد؟
+- [ ] آیا نیاز به real-time monitoring داریم؟
+
+---
+
 ## 3. مسائل فنی
 
 ### چالش: Dashboard Button Text Update ✅ حل شده
@@ -1248,6 +2044,8 @@ async function runACET(config: ACETConfig): Promise<ACETResult> {
 - [ ] تصمیم‌گیری درباره Model 4 fallback
 - [ ] تست rate limiting و پیدا کردن actual limits
 - [ ] طراحی دقیق ساختار تست‌های جامع (ACET, MCCT, ECET)
+- [ ] طراحی UI برای بخش مدیریت سفارشات
+- [ ] تصمیم درباره SQLite vs PostgreSQL
 
 ### این ماه
 - [ ] پیاده‌سازی features اولویت‌دار
@@ -1256,6 +2054,10 @@ async function runACET(config: ACETConfig): Promise<ACETResult> {
 - [ ] بهبود token management (pre-extraction, background refresh)
 - [ ] پیاده‌سازی تست‌های جامع (ACET, MCCT, ECET)
 - [ ] اجرای تست‌های جامع و تحلیل نتایج
+- [ ] پیاده‌سازی Backend Routes برای Order Management (`/api/orders`)
+- [ ] پیاده‌سازی Frontend Dashboard برای مدیریت سفارشات
+- [ ] Setup Database Infrastructure (SQLite)
+- [ ] Migration از File-based به Database
 
 ### آینده (3-6 ماه)
 - [ ] تصمیم درباره حذف کامل UI models
@@ -1278,6 +2080,7 @@ async function runACET(config: ACETConfig): Promise<ACETResult> {
 - Model 4 ممکن است به عنوان fallback نگه داشته شود
 - امکان ایجاد زیرمدل‌های مختلف برای Model 5 (API) تایید شد
 - **تصمیم مهم**: استفاده از تست‌های جامع به جای تست‌های جداگانه
+- **طرح‌های توسعه‌ای**: اضافه کردن Order Management به Dashboard، ساخت Database و HAR Capture
 
 **تصمیمات**:
 - نگه داشتن همه مدل‌ها تا تست کامل
@@ -1285,6 +2088,9 @@ async function runACET(config: ACETConfig): Promise<ACETResult> {
 - امکان ایجاد 5 زیرمدل مختلف برای Model 5 (5.1 تا 5.5)
 - رویکرد تدریجی برای پیاده‌سازی زیرمدل‌ها
 - **استراتژی تست جامع**: طراحی 3 تست جامع (ACET, MCCT, ECET) که به چندین سوال پاسخ می‌دهند
+- **Dashboard Enhancement**: ادغام APIهای Order Management (`getOrders`, `getQueuePosition`, `monitorOrder`)
+- **Database**: تصمیم اولیه برای استفاده از SQLite (با امکان migration به PostgreSQL)
+- **HAR Capture**: ترکیب Manual و Automated HAR capture برای تحلیل network traffic
 
 **Action Items**:
 - تکمیل checklist تست API
@@ -1292,6 +2098,9 @@ async function runACET(config: ACETConfig): Promise<ACETResult> {
 - اولویت‌بندی زیرمدل‌های Model 5
 - تصمیم درباره timeline refactoring
 - طراحی و پیاده‌سازی تست‌های جامع (ACET, MCCT, ECET)
+- پیاده‌سازی Order Management در Dashboard
+- Setup Database و migration از File-based
+- تحلیل HAR موجود و پیاده‌سازی HAR Capture
 
 ---
 

@@ -377,11 +377,15 @@ Headers: order-id: <ORDER_ID>
 - [راهنمای استفاده از API Client](docs/api/client-usage.md)
 
 ### مستندات توسعه
+- [راهنمای استراتژیک و فلسفه پروژه](docs/development/strategy.md) ⭐
 - [دفترچه گزارش پیشرفت](docs/development/journal.md)
 - [نکات Best Practices](docs/development/best-practices.md)
 
 ### گزارش‌ها
 - [گزارش تست‌های سرعت](docs/reports/speed-report.md)
+
+### درباره توسعه‌دهنده
+- [بیوگرافی](docs/BIOGRAPHY.md) - درباره توسعه‌دهنده و رویکرد توسعه
 
 ---
 
@@ -610,3 +614,8 @@ ISC
 - **EasyTrader API**: برای ثبت سفارشات
 
 ساخته شده است.
+
+
+
+
+
