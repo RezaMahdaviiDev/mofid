@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "node_modules/@types/body-parser/README.md",
+                "file": "docs/discussions/challenges-and-questions.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "challenges-and-questions"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "node_modules/@types/body-parser/README.md",
+                "file": "docs/discussions/challenges-and-questions.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for README"
+              "title": "Backlinks for challenges-and-questions"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "node_modules/@types/body-parser/README.md",
+                "file": "docs/discussions/challenges-and-questions.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from README"
+              "title": "Outgoing links from challenges-and-questions"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "node_modules/@types/body-parser/README.md",
+                "file": "docs/discussions/challenges-and-questions.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of README"
+              "title": "Outline of challenges-and-questions"
             }
           }
         ]
@@ -185,6 +185,10 @@
   },
   "active": "d34b781de872934f",
   "lastOpenFiles": [
+    "CHANGELOG_TODAY.md",
+    "docs/discussions/challenges-and-questions.md",
+    "node_modules/@types/body-parser/README.md",
+    "docs/discussions",
     "docs/README.md",
     "docs/reports/transaction-analysis-buy-1767789874368.md",
     "docs/reports/transaction-analysis-buy-1767788216265.md",
